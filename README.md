@@ -1,4 +1,4 @@
-# Zonetegra — Gelen e-Arşiv SAP Ürünü
+# Zonetegra — Gelen e-Arşiv SAP Ürünü (SAP_GEA)
 
 Zonetegra servisi üzerinden gelen (tedarikçilerden alınan) **e-Arşiv UBL-TR `ArchiveInvoice`** faturalarını SAP'a periyodik olarak çeken, ham XML'i saklayan, tedarikçi/hesap eşlemesi yapan ve kullanıcı onayına açık (**park edilmiş**) muhasebe/satınalma belgesi olarak aktaran ürün.
 
