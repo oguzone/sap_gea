@@ -27,21 +27,22 @@ CLASS zcl_zone_iarc_mock IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zif_zone_iarc_provider~list_new_documents.
-    " Sabit tek test belgesi doner - gercek Zonetegra sozlesmesi
-    " dogrulanana kadar pipeline'in geri kalanini (parse/resolve/map/park)
-    " test etmeye yeter (bkz. program/decision-log.md, mock-first strateji).
+    " Sabit tek test belgesi doner - Bayt response semasi (S8) dogrulanana
+    " kadar pipeline'in geri kalanini (parse/resolve/map/park) test etmeye
+    " yeter (bkz. program/decision-log.md, mock-first strateji).
     mv_seq = mv_seq + 1.
     DATA lv_now TYPE timestampl.
     GET TIME STAMP FIELD lv_now.
     APPEND VALUE #(
-      provider_doc_id = |MOCK_DOC_{ mv_seq }|
+      provider_doc_id = |MOCKINV-{ mv_seq }|
+      supplier_tax_no = '1111111111'
       ettn            = |MOCK-{ mv_seq }-ETTN|
       received_at     = lv_now ) TO rt_refs.
   ENDMETHOD.
 
   METHOD zif_zone_iarc_provider~get_document.
     " UBL-TR ArchiveInvoice yapisina paralel (cbc:/cac: prefiksli) - bkz.
-    " sap-edonusum-team/program/ubl-tr-field-inventory.md. Gercek Zonetegra
+    " sap-edonusum-team/program/ubl-tr-field-inventory.md. Gercek Bayt
     " ornek belgesi gelene kadar ZCL_ZONE_IARC_PARSER'i uctan uca test
     " etmek icin kullanilir; namespace xmlns bildirimi bilerek basitlestirildi
     " (prefiks sabit kabul edilir, TODO: gercek namespace-URI kontrolu).
@@ -72,10 +73,6 @@ CLASS zcl_zone_iarc_mock IMPLEMENTATION.
     es_meta-doc_date     = sy-datum.
     es_meta-amount       = '118.00'.
     es_meta-currency     = 'TRY'.
-  ENDMETHOD.
-
-  METHOD zif_zone_iarc_provider~acknowledge_document.
-    " Mock icin no-op.
   ENDMETHOD.
 
 ENDCLASS.

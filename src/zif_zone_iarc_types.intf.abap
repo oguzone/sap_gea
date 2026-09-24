@@ -9,9 +9,10 @@ INTERFACE zif_zone_iarc_types
 
   TYPES:
     BEGIN OF ty_doc_ref,
-      provider_doc_id TYPE string,
-      ettn            TYPE string,
-      received_at     TYPE timestampl,
+      provider_doc_id  TYPE string,    " Bayt: InvoiceNo (orn. PAB2025008140740)
+      supplier_tax_no  TYPE string,    " Bayt: SupplierTaxNumber - GetByInvoiceNoExt icin InvoiceNo ile birlikte zorunlu
+      ettn             TYPE string,
+      received_at      TYPE timestampl,
     END OF ty_doc_ref.
   TYPES tt_doc_ref TYPE STANDARD TABLE OF ty_doc_ref WITH EMPTY KEY.
 

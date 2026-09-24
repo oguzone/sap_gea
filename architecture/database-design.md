@@ -8,7 +8,7 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 
 ## Customizing Tabloları (delivery class C)
 
-### `ZONE_IARC_T001` — BUKRS aktivasyon + polling parametresi
+### `ZONE_IARC_T001` — BUKRS aktivasyon + Bayt şirket/muhasebeci bilgisi
 | Alan | Tip | Key | Açıklama |
 |---|---|---|---|
 | MANDT | CLNT | ✔ | |
@@ -16,15 +16,22 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 | ACTIVE_FLG | XFELD | | Aktif |
 | POLL_INTERVAL_MIN | INT2 | | Polling sıklığı (dakika, varsayılan 15) |
 | ENVIRONMENT | CHAR3 | | DEV/QAS/PRD |
+| COMP_TAX_NO | CHAR11 | | Bayt `CompanyTaxNumber` — bu BUKRS'un VKN'si |
+| COMP_SERIAL_NO | CHAR20 | | Bayt `CompanySerialNo` (örn. `BC-123-456-789`) |
+| ACC_USER_CODE | CHAR20 | | Bayt `AccountantUserCode` — muhasebeci kullanıcı kodu |
+| ACC_TAX_NO | CHAR11 | | Bayt `AccountantTaxNumber` |
+| ACC_PWD_KEY | CHAR60 | | `AccountantUserPassword` için SECSTORE referans adı — **şifre asla açık tutulmaz** |
+
+> Bayt API'si (`AuthenticateExt`/`GetInvoiceListExt`/`GetByInvoiceNoExt`) her çağrıda bu 4 kimlik alanını (CompanyTaxNumber, CompanySerialNo, AccountantUserCode, AccountantTaxNumber) + ortak `PartnerPassCode`'u ister — bkz. `program/decision-log.md` Karar 010.
 
 ### `ZONE_IARC_T002` — Provider master
 | Alan | Tip | Key | Açıklama |
 |---|---|---|---|
 | MANDT | CLNT | ✔ | |
-| PROVIDER_KEY | CHAR10 | ✔ | `ZONETEGRA` / `MOCK` |
-| NAME | CHAR60 | | Görünür ad |
+| PROVIDER_KEY | CHAR10 | ✔ | `BAYT` / `MOCK` |
+| NAME | CHAR60 | | Görünür ad (örn. "Bayt E-Belge Partner") |
 | ADAPTER_CLASS | SEOCLSNAME | | `ZCL_ZONE_IARC_PROVIDER` / `ZCL_ZONE_IARC_MOCK` |
-| PROTOCOL | CHAR6 | | SOAP/REST |
+| PROTOCOL | CHAR6 | | `REST` |
 | ACTIVE_FLG | XFELD | | |
 
 ### `ZONE_IARC_T003` — Provider endpoint + auth referans
@@ -33,16 +40,16 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 | MANDT | CLNT | ✔ | |
 | PROVIDER_KEY | CHAR10 | ✔ | T002 FK |
 | ENVIRONMENT | CHAR3 | ✔ | DEV/QAS/PRD |
-| SERVICE_TYPE | CHAR8 | ✔ | `LIST` / `GET` / `ACK` |
-| ENDPOINT_URL | STRG | | PRD için `https://` zorunlu |
+| SERVICE_TYPE | CHAR8 | ✔ | `AUTH` (`AuthenticateExt`) / `LIST` (`GetInvoiceListExt`) / `GET` (`GetByInvoiceNoExt`) / `DOWNLOAD` (`DownloadFileExt`) |
+| ENDPOINT_URL | STRG | | Örn. `https://ebelge.baytapi.com/baytebelgeservice/AuthenticateExt` |
 | TIMEOUT_SEC | INT2 | | Varsayılan 30 |
 | RETRY_COUNT | INT1 | | Varsayılan 2 |
-| AUTH_TYPE | CHAR8 | | TOKEN/BASIC/CERT/OAUTH2 |
-| STRUST_PSE | CHAR60 | | `AUTH_TYPE=CERT` zorunlu |
-| SECSTORE_KEY | CHAR60 | | `AUTH_TYPE` ∈ {TOKEN,BASIC,OAUTH2} zorunlu — **secret asla açık tutulmaz** |
+| AUTH_TYPE | CHAR8 | | `TOKEN` (Bayt: `PartnerPassCode` + kullanıcı bazlı `Token`, kendine özgü — standart OAUTH2/BASIC değil) |
+| STRUST_PSE | CHAR60 | | Kullanılmıyor (Bayt sertifika tabanlı auth istemiyor) |
+| SECSTORE_KEY | CHAR60 | | `PartnerPassCode` için SECSTORE referans adı (örn. `BAYT_PARTNER_PASSCODE`) — **secret asla açık tutulmaz** |
 | ACTIVE_FLG | XFELD | | |
 
-> Not: MDP `/MDPES/EDOC` mimarisindeki endpoint/auth ayrımı (T011/T012) burada tek tabloda birleştirildi çünkü tek entegratör var; ikinci servis eklenirse ayrıştırma değerlendirilir.
+> Not: MDP `/MDPES/EDOC` mimarisindeki endpoint/auth ayrımı (T011/T012) burada tek tabloda birleştirildi çünkü tek entegratör var; ikinci servis eklenirse ayrıştırma değerlendirilir. `ACK` servis tipi **kaldırıldı** — Bayt API'sinde teyit/onay servisi yok, dedup `ZONE_IARC_T006` unique key ile yapılır.
 
 ### `ZONE_IARC_T004` — Tedarikçi eşleme override
 | Alan | Tip | Key | Açıklama |
@@ -68,10 +75,10 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 | Alan | Tip | Key | Açıklama |
 |---|---|---|---|
 | MANDT | CLNT | ✔ | |
-| PROVIDER_DOC_ID | CHAR40 | ✔ | Zonetegra taraflı belge ID (unique — dedupe/idempotency anahtarı) |
-| ETTN | CHAR36 | | UBL UUID/ETTN |
+| PROVIDER_DOC_ID | CHAR40 | ✔ | Bayt `InvoiceNo` (örn. `PAB2025008140740`, unique — dedupe/idempotency anahtarı) |
+| ETTN | CHAR36 | | UBL UUID/ETTN (belge indirilip parse edilince doldurulur) |
 | BUKRS | BUKRS | | |
-| SUPPLIER_VKN | CHAR11 | | Gönderen VKN/TCKN |
+| SUPPLIER_VKN | CHAR11 | | Bayt `SupplierTaxNumber` (gönderen VKN/TCKN) |
 | LIFNR | LIFNR | | Eşlenen tedarikçi (resolve sonrası) |
 | DOC_DATE | DATUM | | Fatura tarihi |
 | AMOUNT | WRBTR | | Toplam tutar — **CURR tipi, para birimi referansı CURRENCY alanına verilmeli** (DDIC'te `REFTABLE=ZONE_IARC_T006`/`REFFIELD=CURRENCY`, yoksa aktivasyon hatası: "specify reference table and reference field" — gerçek pull'da alındı, bkz. `program/decision-log.md` Karar 007) |
@@ -109,22 +116,23 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 
 - **Yetki nesnesi:** `Z_IARC` (BUKRS, STATUS, ACTVT — 01 Görüntüle, 02 Eşleştir/Düzenle, özel aktivite Onayla&Postala / Reddet) — SU21.
 - **Mesaj sınıfı:** `ZONE_IARC_MC01` (SE91).
-- **Number range:** Gerekmiyor — belge kimliği Zonetegra'nın `PROVIDER_DOC_ID`'si + FI/MM kendi belge numarasını atar.
+- **Number range:** Gerekmiyor — belge kimliği Bayt'ın `InvoiceNo`'su + FI/MM kendi belge numarasını atar.
 - **Background job:** `ZONE_IARC_POLL` raporu, SM36 periyodik (`ZONE_IARC_T001.POLL_INTERVAL_MIN`).
 - **Cockpit:** `ZONE_IARC_COCKPIT` raporu + `ZCL_ZONE_IARC_COCKPIT` (`CL_GUI_ALV_GRID`).
-- **SPRO/IMG:** T001-T005 için IMG activity ("Zonetegra Gelen e-Arşiv Uyarlamaları" düğümü).
+- **SPRO/IMG:** T001-T005 için IMG activity ("Gelen e-Arşiv Uyarlamaları" düğümü).
 
 ## Aktivasyon Adımları (öneri)
 
 1. Development package `ZONE_IARC` açılışı (SE21).
 2. Tablolar SE11'de açılır (T001-T005 delivery class C, T006-T008 delivery class A).
 3. SM30 bakım view'ı — her customizing tablosu için maintenance generator, yetki grubu `Z_IARC` (veya geçici `&NC&`).
-4. Zonetegra pilot satırları (T002/T003) — API dokümantasyonu geldikten sonra doldurulur.
+4. Bayt pilot satırları: `ZONE_IARC_T002` (`PROVIDER_KEY='BAYT'`), `ZONE_IARC_T003` (4 `SERVICE_TYPE` satırı — AUTH/LIST/GET/DOWNLOAD, URL'ler `program/decision-log.md` Karar 010'da listeli), `ZONE_IARC_T001` (her aktif BUKRS için şirket/muhasebeci bilgisi + `ACC_PWD_KEY`/`PartnerPassCode` SECSTORE'a girilir — **asla düz metin customizing'e yazılmaz**).
 5. SPRO/IMG düğümü.
-6. Class/interface iskeleti (abapGit) — Zonetegra API sözleşmesi doğrulanmadan gerçek adapter wiring'i yapılmaz; iskelet + mock provider önce üretilebilir.
+6. Class/interface iskeleti (abapGit) — request tarafı (AuthenticateExt/GetInvoiceListExt/GetByInvoiceNoExt/DownloadFileExt payload'ları) Postman koleksiyonuyla doğrulanıp yazıldı; **response şemaları hâlâ doğrulanmadı** (bkz. risks-and-open-questions.md S8) — gerçek bir test çağrısından örnek response alınınca `ZCL_ZONE_IARC_PROVIDER` güncellenmeli.
 
 ## Onaylanacak (uyarlama netleşince)
 
-- Zonetegra `list_new_documents`/`get_document` gerçek API sözleşmesi (senkron mu, sayfalama var mı, `since` parametresi timestamp mi sequence mi)
-- `acknowledge_document` gerekli mi (yoksa idempotency salt T006 unique key ile)
+- **S8 (kritik):** Bayt response JSON şemaları (`AuthenticateExt`→Token alan adı, `GetInvoiceListExt`→liste eleman alanları, `GetByInvoiceNoExt`→URL alan adı, `DownloadFileExt`→içerik base64 mü ham dosya mı) — şu an sadece REQUEST örnekleri var, response örneği yok
+- `GetInvoiceListExt`'teki `TaxNumber` alanının amacı (belirli karşı taraf filtresi mi, zorunlu mu) — şu an boş gönderiliyor
+- SECSTORE gerçek okuma API'si (SAP sürümüne bağlı, bkz. S7)
 - PO'suz senaryoda hesap/vergi varsayımı hangi durumlarda kullanıcıya sorulacak (T005 tek satır mı, BUKRS × tedarikçi grubu bazlı mı olacak)

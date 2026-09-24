@@ -2,8 +2,8 @@ REPORT zone_iarc_poll.
 
 " SM36 arka plan job'inda calistirilir (periyot ZONE_IARC_T001.
 " POLL_INTERVAL_MIN'e gore planlanir - job zamanlamasi henuz otomatik
-" okumuyor, TODO). Zonetegra servisinden yeni belgeleri ceker, parse/
-" resolve/map/park pipeline'ini calistirir.
+" okumuyor, TODO). Bayt E-Belge Partner servisinden yeni belgeleri ceker,
+" parse/resolve/map/park pipeline'ini calistirir.
 
 PARAMETERS: p_bukrs TYPE bukrs OBLIGATORY.
 

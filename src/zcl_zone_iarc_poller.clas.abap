@@ -83,7 +83,9 @@ CLASS zcl_zone_iarc_poller IMPLEMENTATION.
 
     TRY.
         io_provider->get_document(
-          EXPORTING iv_provider_doc_id = is_ref-provider_doc_id
+          EXPORTING iv_bukrs           = iv_bukrs
+                    iv_provider_doc_id = is_ref-provider_doc_id
+                    iv_supplier_tax_no = is_ref-supplier_tax_no
           IMPORTING ev_xml             = DATA(lv_xml)
                     es_meta            = DATA(ls_meta) ).
       CATCH zcx_zone_iarc_provider INTO DATA(lx_provider).

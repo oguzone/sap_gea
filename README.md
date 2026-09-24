@@ -1,6 +1,6 @@
 # Zonetegra — Gelen e-Arşiv SAP Ürünü (SAP_GEA)
 
-Zonetegra servisi üzerinden gelen (tedarikçilerden alınan) **e-Arşiv UBL-TR `ArchiveInvoice`** faturalarını SAP'a periyodik olarak çeken, ham XML'i saklayan, tedarikçi/hesap eşlemesi yapan ve kullanıcı onayına açık (**park edilmiş**) muhasebe/satınalma belgesi olarak aktaran ürün.
+Zonetegra için, **Bayt E-Belge Partner** entegratör servisi (`ebelge.baytapi.com`) üzerinden gelen (tedarikçilerden alınan) **e-Arşiv UBL-TR `ArchiveInvoice`** faturalarını SAP'a periyodik olarak çeken, ham XML'i saklayan, tedarikçi/hesap eşlemesi yapan ve kullanıcı onayına açık (**park edilmiş**) muhasebe/satınalma belgesi olarak aktaran ürün.
 
 > **Bu ürün MDP Group / e-Dönüşüm (`/MDPES/`) ürününden bağımsızdır.** Zonetegra müşteri hattında, kardeş proje `zonetegra_edeclaration`'dan da ayrı, kendi paket kodu (`ZONE_IARC`) ile geliştirilir.
 
@@ -14,7 +14,7 @@ Proje **taslak / tasarım** aşamasındadır. Aşağıdaki 3 temel karar bu otur
 | Muhasebeleştirme | **Park + manuel onay** — hiçbir belge onaysız postalanmaz |
 | Paket/isimlendirme | **`ZONE_IARC`** (müşteri Z-namespace, kayıtlı SAP namespace yok) |
 
-Zonetegra'nın gerçek servis API sözleşmesi (endpoint, auth, sayfalama, ack) **henüz doğrulanmamıştır** — bkz. [program/risks-and-open-questions.md](program/risks-and-open-questions.md).
+Entegratör (Bayt E-Belge Partner) API'sinin **request** şeması Postman koleksiyonuyla doğrulandı; **response** şeması henüz doğrulanmamıştır — bkz. [program/risks-and-open-questions.md](program/risks-and-open-questions.md) S8.
 
 Durum etiketleri (kardeş projeyle ortak):
 
@@ -30,7 +30,7 @@ program/        Karar günlüğü, açık sorular/riskler
 ## Mimari Akış (özet)
 
 ```text
-[SM36 job] → Zonetegra servisi (polling) → kuyruk + ham XML sakla
+[SM36 job] → Bayt E-Belge Partner API (polling: Auth→List→Get→Download) → kuyruk + ham XML sakla
    → UBL parse → tedarikçi (VKN/TCKN→LIFNR) eşleme → hesap/vergi/PO eşleştirme
    → PARK (MIRO veya FI) → kullanıcı onayı → POST
 ```
@@ -48,11 +48,11 @@ Detay: [architecture/technical-architecture.md](architecture/technical-architect
 
 ## Kod İskeleti
 
-`src/` altında abapGit iskeleti üretildi (8 tablo, interface/class'lar, worklist + SM36 job raporu). Durum ve bilinen sınırlamalar: [src/README.md](src/README.md). Özet: mock provider ile pipeline uçtan uca çalıştırılabilir; Zonetegra gerçek adapter'ı ve MIRO/FI park BAPI çağrısı bilerek TODO bırakıldı (API sözleşmesi doğrulanmadan).
+`src/` altında abapGit iskeleti üretildi (8 tablo, interface/class'lar, worklist + SM36 job raporu). Durum ve bilinen sınırlamalar: [src/README.md](src/README.md). Özet: Bayt provider'ının **request** tarafı gerçek API ile yazıldı (Karar 010); **response şeması** (S8) ve **SECSTORE okuma** (S11) doğrulanmadan gerçek ortamda çalışmaz — mock provider ile pipeline'ın geri kalanı uçtan uca test edilebilir. MIRO/FI park BAPI çağrısı da ayrıca TODO.
 
 ## Sonraki Adımlar (henüz yok — plan)
 
 - `modules/` — muhasebeleştirme kural kataloğu, tedarikçi eşleme senaryoları (netleştikçe eklenecek)
 - `testing/` — test stratejisi, kabul kriterleri
 - `operations/` — job zamanlama, izleme
-- Zonetegra API sözleşmesi doğrulanınca `zcl_zone_iarc_provider` gerçek wiring + `zcl_zone_iarc_post` gerçek BAPI çağrısı
+- Bayt response şeması doğrulanınca `zcl_zone_iarc_provider` düzeltmeleri + SECSTORE wiring + `zcl_zone_iarc_post` gerçek BAPI çağrısı

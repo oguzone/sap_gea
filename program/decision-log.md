@@ -207,3 +207,51 @@ GEREKÇE: TABLES work area + SELECT-OPTIONS FOR kombinasyonu klasik ve
   ayni DDIC tablo adini farkli baglamlarda kullanabilir).
 ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_cockpit.prog.abap
 ```
+
+### Karar 010
+
+```text
+KONU: Gercek entegrator API sozlesmesi teslim edildi (S1 buyuk olcude
+  cozuldu)
+KARAR: Entegrator "Bayt E-Belge Partner" (ebelge.baytapi.com/
+  baytebelgeservice), REST/JSON, "Bayt E-Belge Partner.postman_collection.json"
+  ile dogrulandi. 4 endpoint: AuthenticateExt (PartnerPassCode +
+  AccountantUserCode/Password + CompanyTaxNumber/SerialNo -> Token, JWT
+  ~6 saat gecerli), GetInvoiceListExt (CustomerType="alici" -> BIZ ALICIYIZ
+  = gelen belge senaryosu; EInvoiceType=0 e-Arsiv/1 e-Mustahsil/2
+  e-Serbest Meslek; StartDate/EndDate araligi -> belge listesi),
+  GetByInvoiceNoExt (InvoiceNo+SupplierTaxNumber+CustomerTaxNumber ->
+  belge detayi), DownloadFileExt (Url -> dosya icerigi, Url baska bir
+  domain'e - authrestapi.superentegrator.com - isaret ediyor, Bayt'in
+  SuperEntegrator uzerine kurulu bir partner API'si oldugu anlasiliyor).
+  ACK servisi YOK - S2 kesin cozuldu. ZIF_ZONE_IARC_PROVIDER interface'i
+  buna gore guncellendi: acknowledge_document kaldirildi, get_document
+  artik iv_bukrs + iv_supplier_tax_no aliyor (GetByInvoiceNoExt'in
+  InvoiceNo tek basina yetmiyor). ZCL_ZONE_IARC_PROVIDER gercek HTTP/JSON
+  istek govdeleri ile yazildi (cl_http_client + /ui2/cl_json). ZONE_IARC_T001
+  sirket/muhasebeci alanlariyla (COMP_TAX_NO/COMP_SERIAL_NO/ACC_USER_CODE/
+  ACC_TAX_NO/ACC_PWD_KEY) genisletildi; ZONE_IARC_T003 SERVICE_TYPE
+  degerleri AUTH/LIST/GET/DOWNLOAD oldu (ACK kaldirildi).
+GUVENLIK NOTU: Postman koleksiyonunda PartnerPassCode duz metin
+  (541857E2-...) olarak geldi - digerlerinin aksine maskelenmemisti. Bu
+  deger hicbir commit'e/dosyaya yazilmadi; sadece SECSTORE referans
+  mekanizmasi (ACC_PWD_KEY / T003.SECSTORE_KEY) tasarlandi, gercek deger
+  SAP'de guvenli depoya girilecek.
+SEÇENEKLER: Response semasi netlesene kadar wiring'i erteleyip sadece
+  request tarafini yaz (secildi) / response alan adlarini da kesin
+  varsayip tam wiring yaz (reddedildi - Postman'da response ornegi yok,
+  yanlis varsayimla "calisiyormus gibi gorunen ama calismayan" kod riski)
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın (gercek Postman koleksiyonunu paylasti)
+GEREKÇE: Request semasi %100 dogrulanabilir kaynaktan (calisan Postman
+  ornegi) geldigi icin guvenle kod haline getirildi; response semasi ise
+  hicbir ornek icermedigi icin tahmin olurdu - bu yuzden acikca TODO/S8
+  olarak isaretlenip varsayimlar yorum satirlarinda belirtildi (ornegin
+  "Token" alan adi, liste eleman alanlari, indirme URL alan adi).
+ETKİLENEN MODÜLLER/DOSYALAR: src/zif_zone_iarc_provider.intf.abap,
+  src/zif_zone_iarc_types.intf.abap, src/zcl_zone_iarc_base.clas.abap,
+  src/zcl_zone_iarc_provider.clas.abap, src/zcl_zone_iarc_mock.clas.abap,
+  src/zcl_zone_iarc_poller.clas.abap, src/zone_iarc_t001.tabl.xml,
+  architecture/database-design.md, architecture/technical-architecture.md,
+  program/risks-and-open-questions.md (S1/S2 guncellendi, S8-S11 eklendi)
+```

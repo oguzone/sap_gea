@@ -4,13 +4,15 @@
 
 ## Mimari İlkeler
 
-- Pull tabanlı (polling) alım — Zonetegra push/webhook göndermez, SAP sorar
+- Pull tabanlı (polling) alım — Bayt push/webhook göndermez, SAP sorar
 - Hiçbir belge kullanıcı onayı olmadan postalanmaz (**park + manuel onay**)
-- Tek entegratör (Zonetegra) ama provider factory pattern korunur (test/mock ayrımı + ileride ikinci servis ihtimali)
+- Tek entegratör (Bayt E-Belge Partner, `ebelge.baytapi.com`) ama provider factory pattern korunur (test/mock ayrımı + ileride ikinci servis ihtimali)
 - Ham UBL XML değiştirilmeden saklanır (GİB 10 yıl saklama yükümlülüğü)
 - İş hatası (VKN eşleşmedi, tutar toleransı aşıldı) / teknik hata (servis erişilemedi) ayrımı — yalnız teknik hata retry edilir
 
 ## Ana Akış
+
+> Entegratör API'si "Bayt E-Belge Partner" (Postman koleksiyonuyla doğrulandı — `program/decision-log.md` Karar 010). Request şemaları kesin; **response şemaları henüz doğrulanmadı** (S8).
 
 ```text
 [SM36 job — ZONE_IARC_POLL rapor, periyot ZONE_IARC_T001.POLL_INTERVAL_MIN]
@@ -19,11 +21,14 @@
 ZCL_ZONE_IARC_POLLER  (orchestrator, DI)
         │  ZIF_ZONE_IARC_PROVIDER.list_new_documents( bukrs, son_cekim_ts )
         ▼
-Zonetegra servisi (SOAP/REST — sözleşme [?], bkz. risks-and-open-questions.md)
-        │  ──► yeni belge referansları (UUID/ETTN listesi)
+ZCL_ZONE_IARC_PROVIDER (Bayt adapter)
+        │  1. AuthenticateExt → Token (PartnerPassCode + BUKRS'a ait muhasebeci/şirket bilgisi)
+        │  2. GetInvoiceListExt (CustomerType="alici" → BİZ ALICIYIZ = gelen belge,
+        │     EInvoiceType=0 → e-Arşiv, StartDate/EndDate) → belge referans listesi (InvoiceNo + SupplierTaxNumber)
         ▼
-   .get_document( doc_id ) → UBL XML (xstring) + zarf meta (gönderen VKN, tarih, tutar)
-        │
+   .get_document( bukrs, invoice_no, supplier_tax_no )
+        │  3. GetByInvoiceNoExt (InvoiceNo+SupplierTaxNumber+CustomerTaxNumber=biz) → belge detayı + indirme URL'i [?]
+        │  4. DownloadFileExt (Url) → dosya içeriği (UBL XML, format [?])
         ▼
 ZONE_IARC_T006 (kuyruk, STATUS=NEW) + ZONE_IARC_T007 (ham XML, RSTR alan)
         │
