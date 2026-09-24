@@ -299,3 +299,29 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_t009..t014.tabl.xml (yeni),
   architecture/database-design.md, architecture/technical-architecture.md,
   architecture/class-design.md
 ```
+
+### Karar 012
+
+```text
+KONU: Gelen belgeleri XML ve HTML olarak goruntuleyebilecegim bir rapor
+KARAR: ZONE_IARC_VIEWER raporu eklendi. Liste ZONE_IARC_T006 + T009
+  LEFT OUTER JOIN (henuz parse edilmemis belgeler de gorunsun diye).
+  "XML Goster" fonksiyon tusu ZONE_IARC_T007.XML_RAW'i CL_ABAP_BROWSER
+  ile <pre> icinde gosterir. "HTML Goster" T009..T013'ten (baslik, tam
+  tutar dokumu, baslik notu, vergi dip toplami, kalemler, kalem notu)
+  okunabilir bir fatura HTML'i uretip ayni sekilde gosterir. Tum
+  kullanici/tedarikci kaynakli metin alanlari (isim, not, aciklama)
+  HTML-escape edilir (XSS/bozuk layout riskine karsi - bu veri disaridan
+  - Bayt/tedarikci - geldigi icin guvenilmez kabul edildi).
+SEÇENEKLER: Ayri XML/HTML raporlari yaz / tek rapor + iki fonksiyon
+  tusu (secildi, ZONE_IARC_COCKPIT paterniyle tutarli)
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın
+GEREKÇE: CL_ABAP_BROWSER=>SHOW_HTML zaten kardes projede (Karar 009)
+  ozel dynpro/CUA gerektirmeden dogrulanmis bir teknikti; ayni pattern
+  tekrar kullanildi. I_STRUCTURE_NAME REUSE_ALV_GRID_DISPLAY'e
+  verilmedi (liste birlestirilmis/yerel bir tip) - kolon basliklari
+  teknik alan adi olarak gorunur, bu bilinen kucuk bir kozmetik eksik.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_viewer.prog.abap (yeni),
+  src/README.md
+```

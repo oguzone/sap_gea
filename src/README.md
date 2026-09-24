@@ -37,6 +37,7 @@
 | Review orchestrator | `zcl_zone_iarc_review.clas.abap` | ✅ approve/reject, durum geçiş kontrolü |
 | Worklist | `zone_iarc_cockpit.prog.abap` | ✅ `REUSE_ALV_GRID_DISPLAY` (`CL_GUI_ALV_GRID` tabanlı, `CL_SALV_TABLE` değil) + `SELECTION-SCREEN FUNCTION KEY` ile Onayla/Reddet — kardeş projede manuel `CL_GUI_DOCKING_CONTAINER` bağlamasının `CNTL_ERROR` verdiği bilindiği için (Karar 007/008) o riskli yol hiç denenmedi |
 | Background job | `zone_iarc_poll.prog.abap` | ✅ SM36'da çalıştırılabilir; periyot okuma otomasyonu yok (TODO) |
+| Belge görüntüleme raporu | `zone_iarc_viewer.prog.abap` | ✅ T006+T009 LEFT OUTER JOIN listesi (`REUSE_ALV_GRID_DISPLAY`, `I_STRUCTURE_NAME` verilmedi — kolon başlıkları teknik alan adı, kozmetik eksik) + `XML Göster`/`HTML Göster` fonksiyon tuşları (`CL_ABAP_BROWSER=>SHOW_HTML` ile popup, kardeş projede doğrulanmış teknik — Karar 009). HTML görünüm T009..T013'ten tam okunabilir fatura (başlık/tutarlar/notlar/vergi/kalemler) üretir, tüm metin alanları HTML-escape edilir |
 | Mesaj sınıfı | `zone_iarc_mc01.msag.xml` | ✅ baseline (10 mesaj) |
 | ABAP Unit test | `zcl_zone_iarc_parser.clas.testclasses.abap` | ✅ 6 test (header alanları, header notu, header vergi alt toplamı, satır alanları, satır notu+vergi, zorunlu alan eksikliği exception) — DB bağımsız, self-contained. **Diğer sınıflar (config/resolver/mapper/store) için DB'ye bağımlı test henüz yok** — `CL_OSQL_TEST_ENVIRONMENT` gerektirir, bu da SAP sürümüne bağlıdır (≥7.51); sürüm teyit edilmeden eklenmedi (bkz. risks-and-open-questions.md) |
 
