@@ -11,6 +11,15 @@ REPORT zone_iarc_viewer.
 
 TABLES: sscrfields, zone_iarc_t006.
 
+" Adlandirilmis tablo tipleri - metot imzasinda dogrudan
+" "TYPE STANDARD TABLE OF <db tablosu>" kullanmak yerine (bazi
+" sistemlerde/baglamda parser hatasina yol acabiliyor - "Unable to
+" interpret" hatasi alindi), once TYPES ile adlandirilip oyle kullanilir.
+TYPES: tt_t010 TYPE STANDARD TABLE OF zone_iarc_t010 WITH DEFAULT KEY,
+       tt_t011 TYPE STANDARD TABLE OF zone_iarc_t011 WITH DEFAULT KEY,
+       tt_t012 TYPE STANDARD TABLE OF zone_iarc_t012 WITH DEFAULT KEY,
+       tt_t013 TYPE STANDARD TABLE OF zone_iarc_t013 WITH DEFAULT KEY.
+
 CLASS lcl_html_util DEFINITION.
   PUBLIC SECTION.
     CLASS-METHODS escape
@@ -20,10 +29,10 @@ CLASS lcl_html_util DEFINITION.
     CLASS-METHODS build_invoice_html
       IMPORTING
         is_header      TYPE zone_iarc_t009
-        it_note        TYPE STANDARD TABLE OF zone_iarc_t010
-        it_tax         TYPE STANDARD TABLE OF zone_iarc_t011
-        it_line        TYPE STANDARD TABLE OF zone_iarc_t012
-        it_line_note   TYPE STANDARD TABLE OF zone_iarc_t013
+        it_note        TYPE tt_t010
+        it_tax         TYPE tt_t011
+        it_line        TYPE tt_t012
+        it_line_note   TYPE tt_t013
       RETURNING
         VALUE(rv_html) TYPE string.
 ENDCLASS.
