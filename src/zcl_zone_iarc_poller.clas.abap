@@ -134,6 +134,17 @@ CLASS zcl_zone_iarc_poller IMPLEMENTATION.
         RETURN.
     ENDTRY.
 
+    UPDATE zone_iarc_t006 SET ettn = ls_header-uuid status = 'PARSED'
+      WHERE provider_doc_id = is_ref-provider_doc_id.
+
+    " UBL modelini normalize tablolara yaz (T009 baslik .. T014 kalem vergi
+    " alt toplami) - kalicilik icin XML'i tekrar parse etmeye gerek kalmaz.
+    NEW zcl_zone_iarc_store( )->save(
+      iv_bukrs           = iv_bukrs
+      iv_provider_doc_id = is_ref-provider_doc_id
+      is_header          = ls_header ).
+    mo_log->write( iv_provider_doc_id = is_ref-provider_doc_id iv_step = 'STORE' iv_status = 'OK' ).
+
     DATA(lo_resolver) = NEW zcl_zone_iarc_resolver( ).
     DATA(lv_lifnr)    = lo_resolver->resolve( ls_header-supplier_vkn ).
     IF lv_lifnr IS INITIAL.

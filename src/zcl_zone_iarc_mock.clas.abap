@@ -52,19 +52,43 @@ CLASS zcl_zone_iarc_mock IMPLEMENTATION.
       |<cbc:UUID>MOCK-UUID-{ sy-uzeit }</cbc:UUID>| &&
       |<cbc:ID>MOCKINV-0001</cbc:ID>| &&
       |<cbc:IssueDate>{ lv_issue_date }</cbc:IssueDate>| &&
+      |<cbc:IssueTime>14:30:00</cbc:IssueTime>| &&
+      |<cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>| &&
+      |<cbc:ProfileID>TICARIFATURA</cbc:ProfileID>| &&
+      |<cbc:CopyIndicator>false</cbc:CopyIndicator>| &&
+      |<cbc:Note>Mock header notu</cbc:Note>| &&
       |<cac:AccountingSupplierParty><cac:Party>| &&
       |<cac:PartyIdentification><cbc:ID schemeID="VKN">1111111111</cbc:ID></cac:PartyIdentification>| &&
       |<cac:PartyName><cbc:Name>Mock Tedarikci A.S.</cbc:Name></cac:PartyName>| &&
       |</cac:Party></cac:AccountingSupplierParty>| &&
-      |<cac:TaxTotal><cbc:TaxAmount>18.00</cbc:TaxAmount></cac:TaxTotal>| &&
-      |<cac:LegalMonetaryTotal><cbc:PayableAmount currencyID="TRY">118.00</cbc:PayableAmount></cac:LegalMonetaryTotal>| &&
+      |<cac:AccountingCustomerParty><cac:Party>| &&
+      |<cac:PartyIdentification><cbc:ID schemeID="VKN">2222222222</cbc:ID></cac:PartyIdentification>| &&
+      |<cac:PartyName><cbc:Name>Mock Alici Ltd.</cbc:Name></cac:PartyName>| &&
+      |</cac:Party></cac:AccountingCustomerParty>| &&
+      |<cac:TaxTotal><cbc:TaxAmount>18.00</cbc:TaxAmount>| &&
+      |<cac:TaxSubtotal><cbc:TaxableAmount>100.00</cbc:TaxableAmount><cbc:TaxAmount>18.00</cbc:TaxAmount>| &&
+      |<cbc:Percent>18</cbc:Percent><cac:TaxCategory><cbc:Name>KDV</cbc:Name>| &&
+      |<cac:TaxScheme><cbc:TaxTypeCode>0015</cbc:TaxTypeCode></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal>| &&
+      |</cac:TaxTotal>| &&
+      |<cac:LegalMonetaryTotal>| &&
+      |<cbc:LineExtensionAmount>100.00</cbc:LineExtensionAmount>| &&
+      |<cbc:TaxExclusiveAmount>100.00</cbc:TaxExclusiveAmount>| &&
+      |<cbc:TaxInclusiveAmount>118.00</cbc:TaxInclusiveAmount>| &&
+      |<cbc:AllowanceTotalAmount>0.00</cbc:AllowanceTotalAmount>| &&
+      |<cbc:ChargeTotalAmount>0.00</cbc:ChargeTotalAmount>| &&
+      |<cbc:PayableAmount currencyID="TRY">118.00</cbc:PayableAmount>| &&
+      |</cac:LegalMonetaryTotal>| &&
       |<cac:InvoiceLine>| &&
-      |<cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>| &&
+      |<cbc:Note>Mock kalem notu</cbc:Note>| &&
+      |<cbc:InvoicedQuantity unitCode="C62">1</cbc:InvoicedQuantity>| &&
       |<cbc:LineExtensionAmount>100.00</cbc:LineExtensionAmount>| &&
       |<cac:Item><cbc:Name>Mock Hizmet</cbc:Name></cac:Item>| &&
       |<cac:Price><cbc:PriceAmount>100.00</cbc:PriceAmount></cac:Price>| &&
       |<cac:TaxTotal><cbc:TaxAmount>18.00</cbc:TaxAmount>| &&
-      |<cac:TaxSubtotal><cbc:Percent>18</cbc:Percent></cac:TaxSubtotal></cac:TaxTotal>| &&
+      |<cac:TaxSubtotal><cbc:TaxableAmount>100.00</cbc:TaxableAmount><cbc:TaxAmount>18.00</cbc:TaxAmount>| &&
+      |<cbc:Percent>18</cbc:Percent><cac:TaxCategory><cbc:Name>KDV</cbc:Name>| &&
+      |<cac:TaxScheme><cbc:TaxTypeCode>0015</cbc:TaxTypeCode></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal>| &&
+      |</cac:TaxTotal>| &&
       |</cac:InvoiceLine>| &&
       |</ArchiveInvoice>|.
     ev_xml = cl_abap_codepage=>convert_to( lv_xml ).

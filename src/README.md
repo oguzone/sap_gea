@@ -17,8 +17,10 @@
 
 | Nesne | Dosya | Durum |
 |---|---|---|
-| DDIC tabloları (8 adet) | `zone_iarc_t001..t008.tabl.xml` | ✅ baseline — **DD03P INTTYPE kodları (`RSTR` için `y`, `STRG` için `g`) SE11 aktivasyonunda doğrulanmalı**, kardeş projede benzer bir DATATYPE hatası (`STRING`→`STRG`) gerçek pull'da ortaya çıkmıştı |
-| Canonical model | `zif_zone_iarc_types.intf.abap` | ✅ baseline — UBL alan kapsamı sınırlı (UUID/ID/tarih/tutar/satır), tam şema TBD |
+| DDIC tabloları (kuyruk/log, 8 adet) | `zone_iarc_t001..t008.tabl.xml` | ✅ baseline — **DD03P INTTYPE kodları (`RSTR` için `y`, `STRG` için `g`) SE11 aktivasyonunda doğrulanmalı**, kardeş projede benzer bir DATATYPE hatası (`STRING`→`STRG`) gerçek pull'da ortaya çıkmıştı |
+| DDIC tabloları (UBL normalize, 6 adet) | `zone_iarc_t009..t014.tabl.xml` | ✅ başlık (T009, tam tutar dökümü dahil) + başlık notu (T010) + başlık vergi alt toplamı (T011) + kalem (T012) + kalem notu (T013) + kalem vergi alt toplamı (T014). Tüm `WRBTR` alanları `REFTABLE=ZONE_IARC_T009`/`REFFIELD=DOC_CURRENCY` ile para birimi referansı veriyor (Karar 007 kuralı burada da uygulandı) |
+| Canonical model | `zif_zone_iarc_types.intf.abap` | ✅ genişletildi — not (`ty_note`), tekrarlı vergi alt toplamı (`ty_tax_subtotal`), tam `LegalMonetaryTotal` dökümü, alıcı bilgisi, kalem UOM kodu eklendi |
+| UBL persist servisi | `zcl_zone_iarc_store.clas.abap` | ✅ canonical modeli T009..T014'e yazar; poller'da PARSE'dan hemen sonra çağrılır |
 | Provider sözleşmesi | `zif_zone_iarc_provider.intf.abap` | ✅ Bayt gerçek API'sine göre güncellendi — `acknowledge_document` kaldırıldı (ack servisi yok), `get_document` artık `iv_bukrs`+`iv_supplier_tax_no` alıyor (Karar 010) |
 | Exception hiyerarşisi | `zcx_zone_iarc_root/_provider/_mapping.clas.abap` | ✅ baseline |
 | Config | `zcl_zone_iarc_config.clas.abap` | ✅ tablo boşsa güvenli fallback (MOCK) döner |
@@ -27,16 +29,16 @@
 | Mock provider | `zcl_zone_iarc_mock.clas.abap` | ✅ çalışır — sabit 1 test belgesi üretir, pipeline'ın geri kalanını uçtan uca test etmeye yeter |
 | Bayt provider (gerçek) | `zcl_zone_iarc_provider.clas.abap` | ✅ **request tarafı wiring edildi** (Karar 010) — `AuthenticateExt`/`GetInvoiceListExt`/`GetByInvoiceNoExt`/`DownloadFileExt` gerçek JSON gövdeleriyle çağrılıyor (`cl_http_client`+`/ui2/cl_json`). ⚠️ **response şeması doğrulanmadı** (S8) — Token/liste eleman/URL/dosya içerik alan adları varsayım; gerçek bir test çağrısından sonra düzeltilmeli. `read_secret` TODO olduğu için şu an hiçbir çağrı gerçekte çalışmaz (PartnerPassCode/şifre okunamıyor) |
 | Factory | `zcl_zone_iarc_factory.clas.abap` | ✅ dinamik `CREATE OBJECT`, BUKRS aktif değilse/adapter class bulunamazsa hata |
-| UBL parser | `zcl_zone_iarc_parser.clas.abap` | ✅ genişletildi — gerçek UBL-TR XPath yapısını (`cac:AccountingSupplierParty/cac:Party/...`, `cac:LegalMonetaryTotal/cbc:PayableAmount`, `cac:InvoiceLine` tekrarlı, satır bazlı `cac:TaxTotal`) `sap-edonusum-team/program/ubl-tr-field-inventory.md`'den referansla okur, `cbc:ID` gibi çok yerde geçen alanları `depth` parametresiyle doğru elemente skopluyor. ⚠️ prefiks (`cbc:`/`cac:`) sabit varsayılır (namespace-URI farkındalığı yok), sayısal alan CHAR→P dönüşümü (ondalık ayracı) SU3 ayarına duyarlı olabilir — gerçek Zonetegra örnek belgesiyle doğrulanmalı |
+| UBL parser | `zcl_zone_iarc_parser.clas.abap` | ✅ genişletildi — gerçek UBL-TR XPath yapısını (`AccountingSupplierParty`/`AccountingCustomerParty`, tam `LegalMonetaryTotal`, tekrarlı başlık/kalem `cbc:Note`, tekrarlı `cac:TaxSubtotal`, kalem `unitCode`) `sap-edonusum-team/program/ubl-tr-field-inventory.md`'den referansla okur, `cbc:ID` gibi çok yerde geçen alanları `depth` parametresiyle doğru elemente skopluyor. ⚠️ prefiks (`cbc:`/`cac:`) sabit varsayılır (namespace-URI farkındalığı yok), sayısal alan CHAR→P dönüşümü (ondalık ayracı) SU3 ayarına duyarlı olabilir — gerçek Bayt örnek belgesiyle doğrulanmalı |
 | Tedarikçi eşleme | `zcl_zone_iarc_resolver.clas.abap` | ✅ T004 override + LFA1 STCD1/STCD2 arama |
 | Muhasebe kuralı kararı | `zcl_zone_iarc_mapper.clas.abap` | ✅ basit açık PO arama (EKKO/EKPO) + T005 kural okuma |
 | Park/post | `zcl_zone_iarc_post.clas.abap` | ⛔ bilerek implemente edilmedi — `BAPI_INCOMINGINVOICE_PARK`/FI park/`BAPI_INCOMINGINVOICE_POST` gerçek parametre eşlemesi S/4 vs ECC kararına ve tolerans kuralına bağlı (TODO) |
-| Poller orchestrator | `zcl_zone_iarc_poller.clas.abap` | ✅ uçtan uca akış (fetch→kuyruk→XML sakla→parse→resolve→map→park), her adım loglanır; PARK adımı yukarıdaki TODO nedeniyle her zaman EXCEPTION ile sonuçlanır (gerçek BAPI wiring'e kadar beklenen davranış) |
+| Poller orchestrator | `zcl_zone_iarc_poller.clas.abap` | ✅ uçtan uca akış (fetch→kuyruk→XML sakla→parse→**UBL normalize tabloya yaz**→resolve→map→park), her adım loglanır; PARK adımı yukarıdaki TODO nedeniyle her zaman EXCEPTION ile sonuçlanır (gerçek BAPI wiring'e kadar beklenen davranış) |
 | Review orchestrator | `zcl_zone_iarc_review.clas.abap` | ✅ approve/reject, durum geçiş kontrolü |
 | Worklist | `zone_iarc_cockpit.prog.abap` | ✅ `REUSE_ALV_GRID_DISPLAY` (`CL_GUI_ALV_GRID` tabanlı, `CL_SALV_TABLE` değil) + `SELECTION-SCREEN FUNCTION KEY` ile Onayla/Reddet — kardeş projede manuel `CL_GUI_DOCKING_CONTAINER` bağlamasının `CNTL_ERROR` verdiği bilindiği için (Karar 007/008) o riskli yol hiç denenmedi |
 | Background job | `zone_iarc_poll.prog.abap` | ✅ SM36'da çalıştırılabilir; periyot okuma otomasyonu yok (TODO) |
 | Mesaj sınıfı | `zone_iarc_mc01.msag.xml` | ✅ baseline (10 mesaj) |
-| ABAP Unit test | `zcl_zone_iarc_parser.clas.testclasses.abap` | ✅ 3 test (header alanları, satır alanları, zorunlu alan eksikliği exception) — DB bağımsız, self-contained. **Diğer sınıflar (config/resolver/mapper) için DB'ye bağımlı test henüz yok** — `CL_OSQL_TEST_ENVIRONMENT` gerektirir, bu da SAP sürümüne bağlıdır (≥7.51); sürüm teyit edilmeden eklenmedi (bkz. risks-and-open-questions.md) |
+| ABAP Unit test | `zcl_zone_iarc_parser.clas.testclasses.abap` | ✅ 6 test (header alanları, header notu, header vergi alt toplamı, satır alanları, satır notu+vergi, zorunlu alan eksikliği exception) — DB bağımsız, self-contained. **Diğer sınıflar (config/resolver/mapper/store) için DB'ye bağımlı test henüz yok** — `CL_OSQL_TEST_ENVIRONMENT` gerektirir, bu da SAP sürümüne bağlıdır (≥7.51); sürüm teyit edilmeden eklenmedi (bkz. risks-and-open-questions.md) |
 
 ## Bilinen Sınırlamalar / TODO (bilerek eksik bırakılanlar)
 

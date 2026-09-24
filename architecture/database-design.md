@@ -107,10 +107,52 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 | MANDT | CLNT | ✔ | |
 | GUID | CHAR32 | ✔ | Log kaydı ID (`cl_system_uuid`) |
 | PROVIDER_DOC_ID | CHAR40 | | İlgili belge (varsa) |
-| STEP | CHAR20 | | POLL/FETCH/PARSE/RESOLVE/MAP/PARK/APPROVE/REJECT/POST |
+| STEP | CHAR20 | | POLL/FETCH/PARSE/STORE/RESOLVE/MAP/PARK/APPROVE/REJECT/POST |
 | LOG_STATUS | CHAR10 | | OK/ERROR — (`STATUS` yerine `LOG_STATUS`: T006'daki belge STATUS'uyla karışmasın) |
 | MESSAGE | CHAR255 | | |
 | CREATED_BY / CREATED_AT | (audit) | | |
+
+## UBL Normalize Tabloları (T009–T014)
+
+> Parse edilen UBL belgesinin (başlık, not, vergi dip toplam, kalem, kalem notu, kalem vergi) her yapısı ayrı bir tabloda saklanır — böylece downstream raporlama/kontrol XML'i tekrar parse etmek zorunda kalmaz. Tüm tablolar `BUKRS` + `ETTN` (UUID) ile T009'a, kalem-alt tabloları ayrıca `LINE_NO` ile T012'ye bağlanır. Para tutarı alanları (`WRBTR`) `REFTABLE=ZONE_IARC_T009`/`REFFIELD=DOC_CURRENCY` ile T009'un para birimine referans verir (Karar 007'deki DDIC kuralı — her `WRBTR` alanı için tekrarlandı). `ZCL_ZONE_IARC_STORE` bu 6 tabloyu doldurur; poller'da `PARSE` adımından hemen sonra, `RESOLVE`'dan önce çağrılır.
+
+### `ZONE_IARC_T009` — UBL Başlığı
+| Alan | Tip | Key | Açıklama |
+|---|---|---|---|
+| MANDT | CLNT | ✔ | |
+| BUKRS | BUKRS | ✔ | |
+| ETTN | CHAR36 | ✔ | UBL UUID |
+| PROVIDER_DOC_ID | CHAR40 | | T006 FK (Bayt InvoiceNo) |
+| INVOICE_ID | CHAR40 | | `cbc:ID` — fatura no |
+| ISSUE_DATE | DATUM | | `cbc:IssueDate` |
+| ISSUE_TIME | UZEIT | | `cbc:IssueTime` |
+| INV_TYPE_CODE | CHAR10 | | `cbc:InvoiceTypeCode` |
+| PROFILE_ID | CHAR20 | | `cbc:ProfileID` |
+| COPY_IND | XFELD | | `cbc:CopyIndicator` |
+| DOC_CURRENCY | WAERS | | `cbc:DocumentCurrencyCode` — diğer tüm `WRBTR` alanlarının referansı |
+| SUPPLIER_VKN / SUPPLIER_NAME | CHAR11 / CHAR60 | | `AccountingSupplierParty` |
+| CUSTOMER_VKN / CUSTOMER_NAME | CHAR11 / CHAR60 | | `AccountingCustomerParty` (gelen belgede genelde bizim şirketimiz) |
+| LINE_EXT_AMOUNT / TAX_EXCL_AMOUNT / TAX_INCL_AMOUNT / ALLOW_TOTAL / CHARGE_TOTAL / PAYABLE_AMOUNT | WRBTR | | `LegalMonetaryTotal` alt alanları |
+| TAX_AMOUNT | WRBTR | | Header `TaxTotal/TaxAmount` (T011 satırlarının toplamı ile tutarlı olmalı) |
+| LINE_COUNT | NUMC(3) | | Kalem sayısı |
+| CREATED_BY / CREATED_AT | (audit) | | |
+
+### `ZONE_IARC_T010` — UBL Başlık Notu (tekrarlı)
+Key: `MANDT, BUKRS, ETTN, SEQ_NO`. `NOTE_TEXT` (STRG) — `cbc:Note` (başlık seviyesi, birden fazla olabilir).
+
+### `ZONE_IARC_T011` — UBL Başlık Vergi Alt Toplamı (tekrarlı)
+Key: `MANDT, BUKRS, ETTN, SEQ_NO`. `cac:TaxTotal/cac:TaxSubtotal` — `TAXABLE_AMOUNT`/`TAX_AMOUNT` (WRBTR), `TAX_PERCENT` (NUMC 3, tam yüzde), `TAX_CAT_NAME` (CHAR20, örn. "KDV"), `TAX_TYPE_CODE` (CHAR10, GİB kodu örn. `0015`).
+
+### `ZONE_IARC_T012` — UBL Kalem
+Key: `MANDT, BUKRS, ETTN, LINE_NO`. `ITEM_NAME` (CHAR100), `QUANTITY` (özel DEC(13,3) — standart `QUAN` tipi kullanılmadı, birim referansı gerektirmemesi için; bkz. not aşağıda), `UOM_CODE` (CHAR10, `InvoicedQuantity/@unitCode`), `UNIT_PRICE`/`LINE_AMOUNT`/`TAX_AMOUNT` (WRBTR, T009 referanslı).
+
+> **Not:** `QUANTITY` bilerek standart `QUAN` veri elemanı (örn. `MENGE`) ile değil, düz `DEC` tipiyle tanımlandı — `QUAN` tipi de `CURR` gibi bir birim referans alanı ister (aynı Karar 007 kısıtı), bu proje için gereksiz karmaşıklık olurdu.
+
+### `ZONE_IARC_T013` — UBL Kalem Notu (tekrarlı)
+Key: `MANDT, BUKRS, ETTN, LINE_NO, SEQ_NO`. `NOTE_TEXT` (STRG) — kalem seviyesi `cbc:Note`.
+
+### `ZONE_IARC_T014` — UBL Kalem Vergi Alt Toplamı (tekrarlı)
+Key: `MANDT, BUKRS, ETTN, LINE_NO, SEQ_NO`. T011 ile aynı alan yapısı, kalem seviyesinde.
 
 ## Diğer Repository Nesneleri
 
@@ -124,7 +166,7 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 ## Aktivasyon Adımları (öneri)
 
 1. Development package `ZONE_IARC` açılışı (SE21).
-2. Tablolar SE11'de açılır (T001-T005 delivery class C, T006-T008 delivery class A).
+2. Tablolar SE11'de açılır (T001-T005 delivery class C, T006-T014 delivery class A).
 3. SM30 bakım view'ı — her customizing tablosu için maintenance generator, yetki grubu `Z_IARC` (veya geçici `&NC&`).
 4. Bayt pilot satırları: `ZONE_IARC_T002` (`PROVIDER_KEY='BAYT'`), `ZONE_IARC_T003` (4 `SERVICE_TYPE` satırı — AUTH/LIST/GET/DOWNLOAD, URL'ler `program/decision-log.md` Karar 010'da listeli), `ZONE_IARC_T001` (her aktif BUKRS için şirket/muhasebeci bilgisi + `ACC_PWD_KEY`/`PartnerPassCode` SECSTORE'a girilir — **asla düz metin customizing'e yazılmaz**).
 5. SPRO/IMG düğümü.

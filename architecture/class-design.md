@@ -13,6 +13,7 @@
 | `ZCL_ZONE_IARC_PROVIDER` | **Bayt E-Belge Partner adapter (pilot, tek entegratör)** |
 | `ZCL_ZONE_IARC_MOCK` | Test mock provider |
 | `ZCL_ZONE_IARC_PARSER` | UBL-TR `ArchiveInvoice` parse → canonical model |
+| `ZCL_ZONE_IARC_STORE` | Canonical modeli normalize tablolara yazar (`ZONE_IARC_T009..T014` — başlık/not/vergi/kalem/kalem-not/kalem-vergi) |
 | `ZCL_ZONE_IARC_RESOLVER` | VKN/TCKN → LIFNR eşleme (LFA1 + `ZONE_IARC_T004` override) |
 | `ZCL_ZONE_IARC_MAPPER` | Hesap/vergi/PO eşleştirme kuralları uygulama (`ZONE_IARC_T005`) |
 | `ZCL_ZONE_IARC_POST` | MIRO/FI park + onay sonrası post |

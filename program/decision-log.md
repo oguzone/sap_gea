@@ -255,3 +255,47 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zif_zone_iarc_provider.intf.abap,
   architecture/database-design.md, architecture/technical-architecture.md,
   program/risks-and-open-questions.md (S1/S2 guncellendi, S8-S11 eklendi)
 ```
+
+### Karar 011
+
+```text
+KONU: Parse edilen UBL verisi sadece bellekte/queue'da degil, normalize
+  tablolarda saklanmali (baslik, not, vergi dip toplam, kalem, kalem notu,
+  kalem vergi)
+KARAR: 6 yeni runtime tablo eklendi: ZONE_IARC_T009 (UBL baslik - UUID,
+  ID, tarih/saat, InvoiceTypeCode, ProfileID, satici/alici, tam
+  LegalMonetaryTotal dokumu, header TaxAmount), T010 (baslik notu,
+  tekrarli), T011 (baslik vergi alt toplami, tekrarli), T012 (kalem),
+  T013 (kalem notu, tekrarli), T014 (kalem vergi alt toplami, tekrarli).
+  Anahtar zinciri: tum tablolar MANDT+BUKRS+ETTN (UUID) ile birbirine
+  bagli; kalem ve kalem-alt tablolari ayrica LINE_NO tasir. Yeni
+  ZCL_ZONE_IARC_STORE sinifi canonical modeli (ZIF_ZONE_IARC_TYPES)
+  bu tablolara yazar; poller'da PARSE adimindan hemen sonra, RESOLVE'dan
+  once cagrilir. Canonical model (ty_header/ty_line) de bu kapsamda
+  genisletildi: ty_note, ty_tax_subtotal (tekrarli), tam
+  LegalMonetaryTotal alanlari, alici (customer) bilgisi, kalem UOM kodu
+  eklendi. ZCL_ZONE_IARC_PARSER buna gore genisletildi (cbc:Note,
+  cac:TaxSubtotal, cac:AccountingCustomerParty, InvoicedQuantity/@unitCode
+  parse ediliyor). Mock XML ve ABAP Unit testleri de yeni alanlari
+  kapsayacak sekilde guncellendi (6 test).
+SEÇENEKLER: Sadece XML'i sakla (T007), gerektiginde tekrar parse et
+  (mevcut durum) / normalize tablolara da yaz (secildi) - raporlama/
+  kontrol/muhasebe eslestirme XML tekrar parse etmeden calisabilsin diye
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın
+GEREKÇE: Kullanici, muhasebelestirme asamasina gecmeden once UBL'in tum
+  yapisal alanlarinin (baslik/not/vergi/kalem/kalem-not/kalem-vergi)
+  ayri tablolarda, ortak anahtar (sirket kodu + ETTN, kalemler icin +
+  kalem no) ile saklanmasini talep etti. QUANTITY alani bilerek standart
+  QUAN tipiyle degil duz DEC ile tanimlandi - QUAN da CURR gibi birim
+  referans alani ister (Karar 007 kisitiyla ayni sorun), gereksiz
+  karmasiklik olurdu. Tum WRBTR alanlari ayni Karar 007 kuraliyla
+  T009.DOC_CURRENCY'ye referans verir (baska bir tablodaki alana referans
+  vermek DDIC'te gecerlidir, ayni tabloda olma zorunlulugu yok).
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_t009..t014.tabl.xml (yeni),
+  src/zcl_zone_iarc_store.clas.abap (yeni), src/zif_zone_iarc_types.intf.abap,
+  src/zcl_zone_iarc_parser.clas.abap, src/zcl_zone_iarc_parser.clas.testclasses.abap,
+  src/zcl_zone_iarc_mock.clas.abap, src/zcl_zone_iarc_poller.clas.abap,
+  architecture/database-design.md, architecture/technical-architecture.md,
+  architecture/class-design.md
+```
