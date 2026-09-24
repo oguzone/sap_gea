@@ -164,3 +164,24 @@ GEREKÇE: Bu tercih degil, SAP DDIC'in sabit teknik kisiti - CURR/QUAN
 ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_t006.tabl.xml,
   architecture/database-design.md (REFTABLE/REFFIELD notu eklenmeli - TODO)
 ```
+
+### Karar 008
+
+```text
+KONU: ZONE_IARC_COCKPIT "Alt sinir ust sinirdan buyuk" hatasi
+KARAR: SELECT-OPTIONS s_stat icin "DEFAULT 'PARKED' TO 'EXCEPTION'"
+  kullanilmisti - STATUS alfabetik bir aralik degil sabit deger listesi
+  (enum) oldugundan hem mantik hatasiydi hem de 'PARKED' > 'EXCEPTION'
+  alfabetik oldugu icin "Alt sinir ust sinirdan buyuk" hatasi verdi.
+  DEFAULT clause kaldirildi; INITIALIZATION'da iki ayri EQ degeri
+  (PARKED, EXCEPTION) programatik olarak s_stat'a APPEND edildi.
+SEÇENEKLER: DEFAULT 'EXCEPTION' TO 'PARKED' (alfabetik siraya cevir -
+  yine mantik hatali kalirdi, PARSED/MAPPED/POSTED gibi aradaki degerler
+  de dahil olurdu) / iki ayri EQ degeri APPEND et (secildi)
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın (SAP'de calistirinca hatayi bildirdi)
+GEREKÇE: STATUS bir siralama/araligi olan alan degil; "PARKED VEYA
+  EXCEPTION" istegi bir TO araligiyla degil, birden fazla EQ deger
+  girisiyle ifade edilmeli.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_cockpit.prog.abap
+```

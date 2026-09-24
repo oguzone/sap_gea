@@ -14,13 +14,25 @@ SELECTION-SCREEN FUNCTION KEY 2. " Reddet
 
 PARAMETERS: p_bukrs TYPE bukrs OBLIGATORY,
             p_docid TYPE zone_iarc_t006-provider_doc_id.
-SELECT-OPTIONS: s_stat FOR zone_iarc_t006-status DEFAULT 'PARKED' TO 'EXCEPTION'.
+SELECT-OPTIONS: s_stat FOR zone_iarc_t006-status.
 
 DATA: gt_queue TYPE STANDARD TABLE OF zone_iarc_t006.
 
 INITIALIZATION.
   sscrfields-functxt_01 = 'Onayla'.
   sscrfields-functxt_02 = 'Reddet'.
+
+  " STATUS bir aralik degil, sabit deger listesi (enum) - "DEFAULT x TO y"
+  " kullanmak hem yanlis mantik (alfabetik araliktaki her seyi secer) hem
+  " de 'PARKED' > 'EXCEPTION' oldugu icin "Alt sinir ust sinirdan buyuk"
+  " aktivasyon/generation hatasi verir. Bunun yerine iki ayri EQ degeri
+  " programatik olarak eklenir.
+  s_stat-sign   = 'I'.
+  s_stat-option = 'EQ'.
+  s_stat-low    = 'PARKED'.
+  APPEND s_stat.
+  s_stat-low    = 'EXCEPTION'.
+  APPEND s_stat.
 
 AT SELECTION-SCREEN.
   CASE sscrfields-ucomm.
