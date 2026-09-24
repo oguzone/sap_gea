@@ -354,3 +354,26 @@ GEREKÇE: (1) somut sonucu bilinmiyor - eger T010 gercekten DDIC'te
   bu yeni CSS bloğunda atlanmisti.
 ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_viewer.prog.abap
 ```
+
+### Karar 014
+
+```text
+KONU: ZONE_IARC_VIEWER aktivasyon sonrasi calisma zamani/derleme hatasi -
+  "LT_NOTE is not type-compatible with formal parameter IT_NOTE"
+KARAR: SELECT ... INTO TABLE @DATA(lt_note) (ve lt_tax/lt_line/
+  lt_line_note) EMPTY KEY'li anonim bir tablo tipi uretiyordu;
+  build_invoice_html imzasindaki adlandirilmis tt_t01x tipleri (Karar
+  013'te WITH DEFAULT KEY olarak tanimlanmisti) ile birebir
+  uyusmuyordu. lt_note/lt_tax/lt_line/lt_line_note artik once
+  "DATA lt_x TYPE tt_t01x." ile acikca bildirilip SELECT sonucu oraya
+  okunuyor (inline @DATA(...) kullanilmiyor).
+SEÇENEKLER: tt_t01x tanimini WITH EMPTY KEY'e cevir (SELECT'in urettigi
+  tiple eslessin) / SELECT hedeflerini acikca tt_t01x ile tiple (secildi)
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın (SAP'de aktivasyon/calistirma sirasinda bildirdi)
+GEREKÇE: Acikca ayni adlandirilmis tipi hem SELECT hedefinde hem metot
+  imzasinda kullanmak, anonim tip uretiminin (SELECT INTO TABLE
+  @DATA(...)) tam olarak hangi key tanimini urettigine bagli kalmaktan
+  daha guvenilir ve ongorulebilir.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_viewer.prog.abap
+```
