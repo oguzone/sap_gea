@@ -49,15 +49,19 @@ CLASS lcl_html_util IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD build_invoice_html.
+    " NOT: CSS bloğu duz string literal ('...') ile kurulur, string
+    " template (|...|) ile degil - '{' ABAP string template'lerinde
+    " ifade sinirlayici oldugundan CSS'teki duz suslu parantezler
+    " "Expression limiter '{' ... not followed by space" hatasi verirdi.
     DATA(lv_style) =
-      |<style>| &&
-      |body{font-family:Arial,sans-serif;font-size:13px;margin:16px;}| &&
-      |table{border-collapse:collapse;width:100%;margin-bottom:12px;}| &&
-      |th,td{border:1px solid #ccc;padding:4px 8px;text-align:left;}| &&
-      |th{background:#f2f2f2;}| &&
-      |h3{margin-bottom:4px;}| &&
-      |.tot{text-align:right;}| &&
-      |</style>|.
+      '<style>' &&
+      'body{font-family:Arial,sans-serif;font-size:13px;margin:16px;}' &&
+      'table{border-collapse:collapse;width:100%;margin-bottom:12px;}' &&
+      'th,td{border:1px solid #ccc;padding:4px 8px;text-align:left;}' &&
+      'th{background:#f2f2f2;}' &&
+      'h3{margin-bottom:4px;}' &&
+      '.tot{text-align:right;}' &&
+      '</style>'.
 
     DATA(lv_header) =
       |<h3>UBL Fatura Basligi</h3>| &&
