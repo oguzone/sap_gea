@@ -74,8 +74,8 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 | SUPPLIER_VKN | CHAR11 | | Gönderen VKN/TCKN |
 | LIFNR | LIFNR | | Eşlenen tedarikçi (resolve sonrası) |
 | DOC_DATE | DATUM | | Fatura tarihi |
-| AMOUNT | DEC(15,2) | | Toplam tutar |
-| CURRENCY | WAERS | | |
+| AMOUNT | WRBTR | | Toplam tutar — **CURR tipi, para birimi referansı CURRENCY alanına verilmeli** (DDIC'te `REFTABLE=ZONE_IARC_T006`/`REFFIELD=CURRENCY`, yoksa aktivasyon hatası: "specify reference table and reference field" — gerçek pull'da alındı, bkz. `program/decision-log.md` Karar 007) |
+| CURRENCY | WAERS | | AMOUNT alanının para birimi referansı |
 | STATUS | CHAR10 | | NEW/FETCHED/PARSED/MAPPED/PARKED/POSTED/EXCEPTION/REJECTED |
 | ERROR_TEXT | CHAR255 | | İş/teknik hata mesajı (STATUS=EXCEPTION) |
 | FI_BELNR | BELNR_D | | Park/post sonrası FI belge no |

@@ -29,6 +29,7 @@ Kayıtlı bir namespace (`/XXXX/`) ileride alınırsa (veya ürün MDP `/MDPES/`
 | Yetki nesnesi adı | **10 karakter** | — | `Z_IARC` (6 karakter) kullanılır, `Z_ZONE_IARC` (11) **sığmaz** |
 | DD03P-DATATYPE (alan veri tipi kısa kodu) | **4 karakter** | — | `STRING` yazılamaz → **`STRG`**; `XSTRING` yazılamaz → **`RSTR`** |
 | SQL rezerve kelimeler | — | — | `SECTION`, `ORDER`, `GROUP`, `LEVEL`, `COMMENT` gibi kelimeler alan adı olarak **kullanılmaz** |
+| CURR/QUAN tipi alan (para tutarı/miktar) | — | — | `WRBTR`/`DMBTR` gibi para birimi alanları **aynı tabloda bir `WAERS` alanına `REFTABLE`/`REFFIELD` ile referans vermeli**, yoksa "specify reference table and reference field" aktivasyon hatası alınır — gerçek pull'da `ZONE_IARC_T006-AMOUNT` için alındı (Karar 007) |
 
 **Bu yüzden alınan tasarım kararı:** DDIC tablo bütçesi (6 karakter) `_C_API` gibi açıklayıcı customizing alt-son ekine (kardeş projenin ilk denemesinde kullandığı ve sonradan kısaltmak zorunda kaldığı desen) yer bırakmıyor. Bu nedenle **tüm tablolar** (customizing + runtime ayrımı yapılmadan) `ZONE_IARC_T001`, `T002`, … şeklinde **sıra numarasıyla** adlandırılır; anlamı [database-design.md](database-design.md) tablosunda açıklanır. Bu, `/MDPES/EDOC_T0xx` ve kardeş `ZISU_EDM_T001` paternleriyle de tutarlıdır.
 

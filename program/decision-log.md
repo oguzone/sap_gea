@@ -142,3 +142,25 @@ GEREKÇE: Parser en yeni degisen ve en karmasik (XML DOM navigasyonu,
 ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_parser.clas.testclasses.abap,
   src/README.md, program/risks-and-open-questions.md (S7 eklendi)
 ```
+
+### Karar 007
+
+```text
+KONU: Ilk abapGit pull'da ZONE_IARC_T006 aktivasyon hatasi
+KARAR: "ZONE_IARC_T006-AMOUNT (specify reference table AND reference
+  field)" hatasi alindi - WRBTR (para tutari, CURR tipi) alani hangi
+  alanin para birimini tasidigini bilmeli. AMOUNT alanina REFTABLE=
+  ZONE_IARC_T006 / REFFIELD=CURRENCY eklendi (CURRENCY alani zaten ayni
+  tabloda WAERS ile tanimliydi).
+SEÇENEKLER: AMOUNT'u custom DEC alanina cevir (referans gerektirmez) /
+  WRBTR'yi koru + REFTABLE/REFFIELD ekle (secildi)
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın (SAP'de pull sirasinda hatayi bildirdi)
+GEREKÇE: Bu tercih degil, SAP DDIC'in sabit teknik kisiti - CURR/QUAN
+  tipi her alan bir para birimi/birim referans alanina sahip olmali.
+  WRBTR standart data element olarak korunmasi (custom DEC yerine)
+  tercih edildi cunku dogru ondalik/yuvarlama davranisini SAP'nin kendi
+  para birimi mantigindan alir.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_t006.tabl.xml,
+  architecture/database-design.md (REFTABLE/REFFIELD notu eklenmeli - TODO)
+```
