@@ -185,3 +185,25 @@ GEREKÇE: STATUS bir siralama/araligi olan alan degil; "PARKED VEYA
   girisiyle ifade edilmeli.
 ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_cockpit.prog.abap
 ```
+
+### Karar 009
+
+```text
+KONU: SELECT-OPTIONS ... FOR ZONE_IARC_T006-STATUS - STATUS alani
+  gorunmuyor/cozulmuyor
+KARAR: TABLES: sscrfields. bildirimi vardi ama TABLES: zone_iarc_t006.
+  yoktu. Klasik SELECT-OPTIONS ... FOR <tablo>-<alan> sozdizimi, <tablo>
+  identifier'inin programda bilinen bir data nesnesi (TABLES work area)
+  olmasini gerektirir; PARAMETERS ... TYPE zone_iarc_t006-provider_doc_id
+  (TYPE ile DDIC referansi) calisiyordu ama SELECT-OPTIONS...FOR (klasik
+  sozdizim) calismiyordu. TABLES listesine zone_iarc_t006 eklendi.
+SEÇENEKLER: TABLES: zone_iarc_t006. ekle (secildi) / SELECT-OPTIONS'u
+  yerel bir TYPE tanimina baglayacak sekilde yeniden yaz
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın (SAP'de yazarken fark etti)
+GEREKÇE: TABLES work area + SELECT-OPTIONS FOR kombinasyonu klasik ve
+  en az degisiklik gerektiren duzeltme; DATA: gt_queue TYPE STANDARD
+  TABLE OF zone_iarc_t006 ile isim celismesi yok (TABLES ve TYPE OF
+  ayni DDIC tablo adini farkli baglamlarda kullanabilir).
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_cockpit.prog.abap
+```

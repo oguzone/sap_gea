@@ -7,7 +7,7 @@ REPORT zone_iarc_cockpit.
 " REUSE_ALV_GRID_DISPLAY ve SELECTION-SCREEN FUNCTION KEY (Karar 009
 " paterni) tercih edildi - interaktif ALV toolbar/PF-STATUS gerektirmez.
 
-TABLES: sscrfields.
+TABLES: sscrfields, zone_iarc_t006.
 
 SELECTION-SCREEN FUNCTION KEY 1. " Onayla
 SELECTION-SCREEN FUNCTION KEY 2. " Reddet
