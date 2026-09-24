@@ -16,19 +16,19 @@
     <item>
      <ID>R</ID>
      <ENTRY>Gelen e-Arsiv Worklist</ENTRY>
-     <LENGTH>24</LENGTH>
+     <LENGTH>22</LENGTH>
     </item>
     <item>
      <ID>I</ID>
      <KEY>001</KEY>
      <ENTRY>Onayla</ENTRY>
-     <LENGTH>7</LENGTH>
+     <LENGTH>6</LENGTH>
     </item>
     <item>
      <ID>I</ID>
      <KEY>002</KEY>
      <ENTRY>Reddet</ENTRY>
-     <LENGTH>7</LENGTH>
+     <LENGTH>6</LENGTH>
     </item>
    </TPOOL>
   </asx:values>
