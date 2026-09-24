@@ -258,13 +258,23 @@ FORM show_html USING iv_docid TYPE zone_iarc_t006-provider_doc_id.
     RETURN.
   ENDIF.
 
-  SELECT * FROM zone_iarc_t010 INTO TABLE @DATA(lt_note)
+  " NOT: SELECT ... INTO TABLE @DATA(...) EMPTY KEY'li anonim bir tablo
+  " tipi uretir; bu, build_invoice_html imzasindaki adlandirilmis
+  " tt_t01x (WITH DEFAULT KEY) tipiyle birebir uyusmadigi icin "type-
+  " compatible degil" hatasi verdi. Once acikca tt_t01x ile DATA
+  " bildirilip SELECT sonucu oraya okunur.
+  DATA lt_note      TYPE tt_t010.
+  DATA lt_tax       TYPE tt_t011.
+  DATA lt_line      TYPE tt_t012.
+  DATA lt_line_note TYPE tt_t013.
+
+  SELECT * FROM zone_iarc_t010 INTO TABLE @lt_note
     WHERE bukrs = @lv_bukrs AND ettn = @lv_ettn ORDER BY seq_no.
-  SELECT * FROM zone_iarc_t011 INTO TABLE @DATA(lt_tax)
+  SELECT * FROM zone_iarc_t011 INTO TABLE @lt_tax
     WHERE bukrs = @lv_bukrs AND ettn = @lv_ettn ORDER BY seq_no.
-  SELECT * FROM zone_iarc_t012 INTO TABLE @DATA(lt_line)
+  SELECT * FROM zone_iarc_t012 INTO TABLE @lt_line
     WHERE bukrs = @lv_bukrs AND ettn = @lv_ettn ORDER BY line_no.
-  SELECT * FROM zone_iarc_t013 INTO TABLE @DATA(lt_line_note)
+  SELECT * FROM zone_iarc_t013 INTO TABLE @lt_line_note
     WHERE bukrs = @lv_bukrs AND ettn = @lv_ettn ORDER BY line_no, seq_no.
 
   DATA(lv_html) = lcl_html_util=>build_invoice_html(
