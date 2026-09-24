@@ -377,3 +377,40 @@ GEREKÇE: Acikca ayni adlandirilmis tipi hem SELECT hedefinde hem metot
   daha guvenilir ve ongorulebilir.
 ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_viewer.prog.abap
 ```
+
+### Karar 015
+
+```text
+KONU: Gercek split-screen (ust liste / alt tab-detay) grid ALV cockpit
+KARAR: ZCL_ZONE_IARC_GRID + ZONE_IARC_GRID raporu eklendi. Ozel dynpro
+  YAZILMADI - CL_GUI_DOCKING_CONTAINER dogrudan aktif secim ekranina
+  (sy-repid/sy-dynnr) baglaniyor, AT SELECTION-SCREEN OUTPUT'tan
+  cagriliyor. Bu teknigin bu musteri hattinda (MDP-EgiderPusulasi/
+  egdp-abap ZCL_EGDP_COCKPIT) GERCEKTEN CALISTIGI dogrulandi - birebir
+  kopyalandi. Docking container icinde CL_GUI_SPLITTER_CONTAINER (2
+  satir) ile ekran ikiye bolundu: ust CL_GUI_ALV_GRID (belge listesi,
+  T006+T009 join), alt CL_GUI_ALV_GRID (detay - secili satira cift
+  tiklayinca yuklenir). "Tab" yapisi CL_GUI_TAB_STRIP (native kontrol)
+  ile DEGIL, alt grid'in arac cubugundaki 4 buton (Kalemler/Vergi-KDV/
+  Dip Toplamlar/Notlar) ile saglandi - moda gore alt grid yok edilip
+  (FREE) dogru DDIC yapisiyla (T012/T011/T010 veya ozel KV tipi) yeniden
+  yaratiliyor.
+SEÇENEKLER: Gercek split-screen dene (kullanici sectigi secenek) - alt
+  detay icin CL_GUI_TAB_STRIP (native tab) / arac cubugu butonuyla tek
+  grid'i degistir (secildi). Kullanicinin ilk istedigi "genuine risky"
+  secenekti; alt kisimda CL_GUI_TAB_STRIP yerine arac cubugu tercih
+  edildi cunku bu kod tabaninda TAB_STRIP'in dogrulanmis hic ornegi yok,
+  splitter+docking+grid ise artik VAR (egdp-abap referansi).
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın (once "gercek split-screen dene" secti)
+GEREKÇE: egdp-abap'ta ayni CL_GUI_DOCKING_CONTAINER+CL_GUI_ALV_GRID
+  teknigi zaten "✔ uretildi" (ZCL_EGDP_COCKPIT) durumunda; bu ayni
+  ortamda calistigina dair somut kanit. Kardes projedeki (zonetegra_
+  edeclaration) CNTL_ERROR (Karar 007/008 orada) FARKLI bir raporda
+  (KDV1_PREVIEW) ve muhtemelen implementasyon hatasindan kaynaklanmis -
+  teknigin kendisi genel olarak calisiyor, dogru kullanildiginda.
+  CL_GUI_TAB_STRIP icin ayni turden bir "calisan referans" bulunamadigi
+  icin o kisimda daha dusuk riskli arac cubugu alternatifi tercih edildi.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap (yeni),
+  src/zone_iarc_grid.prog.abap (yeni), src/README.md
+```
