@@ -325,3 +325,32 @@ GEREKÇE: CL_ABAP_BROWSER=>SHOW_HTML zaten kardes projede (Karar 009)
 ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_viewer.prog.abap (yeni),
   src/README.md
 ```
+
+### Karar 013
+
+```text
+KONU: ZONE_IARC_VIEWER aktivasyon hatalari - "Unable to interpret
+  ZONE_IARC_T010" ve "Expression limiter '{' in string template not
+  followed by space"
+KARAR: Iki ayri hata: (1) CLASS-METHODS build_invoice_html
+  imzasindaki "TYPE STANDARD TABLE OF zone_iarc_t01x" dogrudan kullanimi
+  onceden TYPES ile adlandirilmis tiplere (tt_t010..tt_t013, WITH
+  DEFAULT KEY) cevrildi. (2) CSS bloğu (lv_style) string template
+  (|...|) ile kuruluyordu; CSS'teki duz suslu parantezler (body{...}
+  vb.) ABAP tarafindan ifade sinirlayici sanildi - duz string literal'e
+  ('...') cevrildi.
+SEÇENEKLER: (2) icin alternatif: '{' -> '\{' / '}' -> '\}' escape et
+  (JSON govdesinde yapildigi gibi) / duz string literale gec (secildi,
+  CSS'te cok sayida brace oldugundan daha az hataya acik)
+KARAR TARİHİ: 2026-09-24
+KARARI VEREN: Oğuz Sayın (SAP'de aktivasyon sirasinda iki hatayi da
+  sirayla bildirdi)
+GEREKÇE: (1) somut sonucu bilinmiyor - eger T010 gercekten DDIC'te
+  aktif degilse ayni hata TYPES satirinda da cikabilirdi, ama kullanici
+  bir sonraki hatayi (CSS/string template) bildirdigi icin (1) numarali
+  fix'in sorunu gercekten cozdugu anlasiliyor (T010 aktifmis). (2) ABAP
+  string template'lerinde '{' her zaman ifade baslangici sayilir; JSON
+  govdesi olustururken bu zaten biliniyordu ve dogru escape edilmisti,
+  bu yeni CSS bloğunda atlanmisti.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_viewer.prog.abap
+```
