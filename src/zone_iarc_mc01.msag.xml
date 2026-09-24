@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_MSAG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <T100A>
+    <ARBGB>ZONE_IARC_MC01</ARBGB>
+    <MASTERLANG>T</MASTERLANG>
+   </T100A>
+   <T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>001</MSGNR>
+     <TEXT>&amp;1 &amp;2 &amp;3 &amp;4</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>100</MSGNR>
+     <TEXT>BUKRS icin aktif provider bulunamadi: &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>101</MSGNR>
+     <TEXT>Zonetegra servisine erisilemedi: &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>102</MSGNR>
+     <TEXT>UBL XML zorunlu alan eksik: &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>103</MSGNR>
+     <TEXT>Belge zaten islenmis (duplicate): &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>104</MSGNR>
+     <TEXT>Tedarikci esleme bulunamadi (VKN/TCKN): &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>105</MSGNR>
+     <TEXT>Muhasebelestirme kurali bulunamadi: BUKRS &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>106</MSGNR>
+     <TEXT>Park islemi basarisiz: &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>107</MSGNR>
+     <TEXT>Belge bulunamadi: &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>ZONE_IARC_MC01</ARBGB>
+     <MSGNR>108</MSGNR>
+     <TEXT>Belge bu durumdan onaylanamaz/reddedilemez: &amp;1</TEXT>
+    </T100>
+   </T100>
+  </asx:values>
+ </asx:abap>
+</abapGit>

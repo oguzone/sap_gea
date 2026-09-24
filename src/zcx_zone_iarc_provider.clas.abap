@@ -1,0 +1,15 @@
+CLASS zcx_zone_iarc_provider DEFINITION
+  PUBLIC
+  INHERITING FROM zcx_zone_iarc_root
+  FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS zcx_zone_iarc_provider IMPLEMENTATION.
+ENDCLASS.
