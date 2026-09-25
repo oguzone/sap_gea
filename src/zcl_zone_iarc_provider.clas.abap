@@ -129,7 +129,7 @@ CLASS zcl_zone_iarc_provider IMPLEMENTATION.
                 ev_acc_user_code  = DATA(lv_acc_user_code)
                 ev_acc_password   = DATA(lv_acc_password) ).
 
-    DATA(lv_partner_pass) = read_secret( 'BAYT_PARTNER_PASSCODE' ).
+    DATA(lv_partner_pass) = zcl_zone_iarc_secret=>read( 'BAYT_PARTNER_PASSCODE' ).
 
     " Alan adlari AuthenticateExt request'inden birebir (Postman koleksiyonu
     " ile dogrulandi - bkz. program/decision-log.md Karar 010).
@@ -173,7 +173,7 @@ CLASS zcl_zone_iarc_provider IMPLEMENTATION.
                 ev_acc_tax_no     = DATA(lv_acc_tax_no) ).
 
     DATA(lv_token)         = authenticate( iv_bukrs ).
-    DATA(lv_partner_pass)  = read_secret( 'BAYT_PARTNER_PASSCODE' ).
+    DATA(lv_partner_pass)  = zcl_zone_iarc_secret=>read( 'BAYT_PARTNER_PASSCODE' ).
 
     CONVERT TIME STAMP iv_since TIME ZONE sy-zonlo INTO DATE DATA(lv_since_date) TIME DATA(lv_since_time).
     DATA(lv_start_date) = |{ lv_since_date+0(4) }-{ lv_since_date+4(2) }-{ lv_since_date+6(2) }|.
@@ -229,7 +229,7 @@ CLASS zcl_zone_iarc_provider IMPLEMENTATION.
                 ev_acc_tax_no     = DATA(lv_acc_tax_no) ).
 
     DATA(lv_token)        = authenticate( iv_bukrs ).
-    DATA(lv_partner_pass) = read_secret( 'BAYT_PARTNER_PASSCODE' ).
+    DATA(lv_partner_pass) = zcl_zone_iarc_secret=>read( 'BAYT_PARTNER_PASSCODE' ).
 
     " Adim 1: GetByInvoiceNoExt - belge detayi (indirme URL'i icerdigi
     " varsayiliyor, TODO S8). CustomerTaxNumber = bizim sirket (biz aliciyiz,

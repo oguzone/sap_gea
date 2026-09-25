@@ -38,14 +38,6 @@ CLASS zcl_zone_iarc_base DEFINITION
       RAISING
         zcx_zone_iarc_provider.
 
-    METHODS read_secret
-      IMPORTING
-        !iv_secstore_key TYPE string
-      RETURNING
-        VALUE(rv_value) TYPE string
-      RAISING
-        zcx_zone_iarc_provider.
-
   PRIVATE SECTION.
 ENDCLASS.
 
@@ -107,19 +99,7 @@ CLASS zcl_zone_iarc_base IMPLEMENTATION.
           iv_error_code = 'IARC_PROV_010'
           iv_detail     = |BUKRS { iv_bukrs } icin Bayt sirket/muhasebeci parametresi (ZONE_IARC_T001) bulunamadi|.
     ENDIF.
-    ev_acc_password = read_secret( lv_pwd_key ).
-  ENDMETHOD.
-
-  METHOD read_secret.
-    " TODO: gercek SECSTORE/STRUST okuma API'si Basis/guvenlik ekibiyle
-    " netlesmeli (SAP surumune gore CL_SECSTORE_ADMIN veya esdegeri farkli
-    " olabilir - bkz. program/risks-and-open-questions.md S7 SAP surum
-    " sorusu). Secret ASLA kod icinde sabit yazilmaz; bu metot cagirana
-    " kadar bilerek "not implemented" firlatir.
-    RAISE EXCEPTION TYPE zcx_zone_iarc_provider
-      EXPORTING
-        iv_error_code = 'IARC_PROV_011'
-        iv_detail     = |SECSTORE okuma henuz wiring edilmedi (key: { iv_secstore_key })|.
+    ev_acc_password = zcl_zone_iarc_secret=>read( lv_pwd_key ).
   ENDMETHOD.
 
 ENDCLASS.

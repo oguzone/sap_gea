@@ -454,3 +454,37 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_t015.tabl.xml (yeni),
   architecture/database-design.md, architecture/technical-architecture.md,
   architecture/class-design.md, src/README.md
 ```
+
+### Karar 017
+
+```text
+KONU: Servis tarafi uyarlama ekrani (URL + kullanici/sifre) - sifre
+  goruntulenebilir olmamali
+KARAR: Iki ayri mekanizma: (1) URL/environment/protocol gibi HASSAS
+  OLMAYAN alanlar icin ZONE_IARC_T001/T002/T003 standart SM30 bakim
+  gorunumu ile yonetilir (SE11 Table Maintenance Generator - elle
+  acilir, abapGit ile uretilmez). (2) Sifre (PartnerPassCode,
+  AccountantUserPassword) icin: yeni ZCL_ZONE_IARC_SECRET sinifi
+  (CL_SECSTORE_ADMIN=>GET_DATA/SET_DATA ile en-iyi-caba) + yeni
+  ZONE_IARC_SECRET raporu. Bu rapor WRITE-ONLY'dir: deger iki kez
+  maskeli (SCREEN-INVISIBLE teknigi, ozel dynpro gerekmez) girilir,
+  kaydedilince ekrandan hemen CLEAR edilir; "Kontrol Et" butonu sadece
+  var/yok bilgisi verir, degeri ASLA geri gostermez. ZCL_ZONE_IARC_BASE
+  ve ZCL_ZONE_IARC_PROVIDER'daki eski READ_SECRET stub'i kaldirilip
+  ZCL_ZONE_IARC_SECRET=>READ ile degistirildi.
+SEÇENEKLER: Sifreyi de customizing tablosuna (duz metin) yaz - REDDEDILDI,
+  guvenlik ilkesine aykiri / SECSTORE + ayri write-only rapor (secildi)
+KARAR TARİHİ: 2026-09-25
+KARARI VEREN: Oğuz Sayın (soruyu sordu: "sifre gorulebiliyor olmamasi
+  lazim, bunu nasil sagliriz")
+GEREKÇE: SAP'nin standart guvenlik ilkesi - hassas veri customizing
+  tablosunda asla duz metin tutulmaz, sadece referans anahtar adi
+  tutulur; gercek deger Secure Storage'da, erisimi kisitli ve
+  uygulamadan geri okunamayacak sekilde tutulur. CL_SECSTORE_ADMIN
+  API'si TEK bir sinifta (ZCL_ZONE_IARC_SECRET) izole edildi ki yanlis
+  API varsayimi cikarsa duzeltme tek yerde kalsin (S7/S11 hala acik).
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_secret.clas.abap (yeni),
+  src/zone_iarc_secret.prog.abap (yeni), src/zcl_zone_iarc_base.clas.abap,
+  src/zcl_zone_iarc_provider.clas.abap, src/README.md,
+  program/risks-and-open-questions.md (S11 guncellendi)
+```
