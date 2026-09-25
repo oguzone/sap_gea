@@ -112,9 +112,9 @@ Domain/Data Element **kullanılmıyor** — `ZONE_IARC_` öneki (10 karakter) so
 | MESSAGE | CHAR255 | | |
 | CREATED_BY / CREATED_AT | (audit) | | |
 
-## UBL Normalize Tabloları (T009–T014)
+## UBL Normalize Tabloları (T009–T016)
 
-> Parse edilen UBL belgesinin (başlık, not, vergi dip toplam, kalem, kalem notu, kalem vergi) her yapısı ayrı bir tabloda saklanır — böylece downstream raporlama/kontrol XML'i tekrar parse etmek zorunda kalmaz. Tüm tablolar `BUKRS` + `ETTN` (UUID) ile T009'a, kalem-alt tabloları ayrıca `LINE_NO` ile T012'ye bağlanır. Para tutarı alanları (`WRBTR`) `REFTABLE=ZONE_IARC_T009`/`REFFIELD=DOC_CURRENCY` ile T009'un para birimine referans verir (Karar 007'deki DDIC kuralı — her `WRBTR` alanı için tekrarlandı). `ZCL_ZONE_IARC_STORE` bu 6 tabloyu doldurur; poller'da `PARSE` adımından hemen sonra, `RESOLVE`'dan önce çağrılır.
+> Parse edilen UBL belgesinin (başlık, not, vergi dip toplam, kalem, kalem notu, kalem vergi) her yapısı ayrı bir tabloda saklanır — böylece downstream raporlama/kontrol XML'i tekrar parse etmek zorunda kalmaz. Tüm tablolar `BUKRS` + `ETTN` (UUID) ile T009'a, kalem-alt tabloları ayrıca `LINE_NO` ile T012'ye bağlanır. Para tutarı alanları (`WRBTR`) `REFTABLE=ZONE_IARC_T009`/`REFFIELD=DOC_CURRENCY` ile T009'un para birimine referans verir (Karar 007'deki DDIC kuralı — her `WRBTR` alanı için tekrarlandı). `ZCL_ZONE_IARC_STORE` bu 8 tabloyu (T009-T016) doldurur; poller'da `PARSE` adımından hemen sonra, `RESOLVE`'dan önce çağrılır.
 
 ### `ZONE_IARC_T009` — UBL Başlığı
 | Alan | Tip | Key | Açıklama |
@@ -154,6 +154,27 @@ Key: `MANDT, BUKRS, ETTN, LINE_NO, SEQ_NO`. `NOTE_TEXT` (STRG) — kalem seviyes
 ### `ZONE_IARC_T014` — UBL Kalem Vergi Alt Toplamı (tekrarlı)
 Key: `MANDT, BUKRS, ETTN, LINE_NO, SEQ_NO`. T011 ile aynı alan yapısı, kalem seviyesinde.
 
+### `ZONE_IARC_T015` — UBL Gönderici (Satıcı) Detayı
+### `ZONE_IARC_T016` — UBL Alıcı Detayı
+Key (ikisi de): `MANDT, BUKRS, ETTN` (tekil — 1 belge = 1 satıcı + 1 alıcı). `AccountingSupplierParty`/`AccountingCustomerParty` bloğunun tamamı — sadece VKN/isim değil, tam adres ve iletişim:
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| VKN_TCKN | CHAR11 | `PartyIdentification/ID` |
+| SCHEME_ID | CHAR20 | `PartyIdentification/ID/@schemeID` — `VKN`/`TCKN` |
+| PARTY_NAME | CHAR60 | `PartyName/Name` — kurumsal unvan |
+| FIRST_NAME / FAMILY_NAME | CHAR40 | `Person/FirstName`/`FamilyName` — bireysel (UBL-09, `schemeID=TCKN` durumunda) |
+| STREET | CHAR100 | `PostalAddress/StreetName` |
+| DISTRICT | CHAR40 | `PostalAddress/CitySubdivisionName` — ilçe |
+| CITY | CHAR40 | `PostalAddress/CityName` — il |
+| POSTAL_ZONE | CHAR10 | `PostalAddress/PostalZone` |
+| COUNTRY | CHAR40 | `PostalAddress/Country/Name` |
+| TAX_OFFICE | CHAR60 | `PartyTaxScheme/TaxScheme/Name` — vergi dairesi |
+| TELEPHONE | CHAR20 | `Contact/Telephone` |
+| EMAIL | CHAR80 | `Contact/ElectronicMail` |
+
+T009'daki `SUPPLIER_VKN`/`SUPPLIER_NAME`/`CUSTOMER_VKN`/`CUSTOMER_NAME` alanları **kaldırılmadı** (geriye dönük uyumluluk — `ZCL_ZONE_IARC_RESOLVER` LIFNR eşlemesi için hâlâ bunları okuyor); T015/T016 bunların üzerine ek, daha zengin detay sağlar.
+
 ## Diğer Repository Nesneleri
 
 - **Yetki nesnesi:** `Z_IARC` (BUKRS, STATUS, ACTVT — 01 Görüntüle, 02 Eşleştir/Düzenle, özel aktivite Onayla&Postala / Reddet) — SU21.
@@ -166,7 +187,7 @@ Key: `MANDT, BUKRS, ETTN, LINE_NO, SEQ_NO`. T011 ile aynı alan yapısı, kalem 
 ## Aktivasyon Adımları (öneri)
 
 1. Development package `ZONE_IARC` açılışı (SE21).
-2. Tablolar SE11'de açılır (T001-T005 delivery class C, T006-T014 delivery class A).
+2. Tablolar SE11'de açılır (T001-T005 delivery class C, T006-T016 delivery class A).
 3. SM30 bakım view'ı — her customizing tablosu için maintenance generator, yetki grubu `Z_IARC` (veya geçici `&NC&`).
 4. Bayt pilot satırları: `ZONE_IARC_T002` (`PROVIDER_KEY='BAYT'`), `ZONE_IARC_T003` (4 `SERVICE_TYPE` satırı — AUTH/LIST/GET/DOWNLOAD, URL'ler `program/decision-log.md` Karar 010'da listeli), `ZONE_IARC_T001` (her aktif BUKRS için şirket/muhasebeci bilgisi + `ACC_PWD_KEY`/`PartnerPassCode` SECSTORE'a girilir — **asla düz metin customizing'e yazılmaz**).
 5. SPRO/IMG düğümü.

@@ -70,6 +70,12 @@ CLASS zcl_zone_iarc_parser DEFINITION
         !iv_line_no TYPE i
       RETURNING
         VALUE(rs_line) TYPE zif_zone_iarc_types=>ty_line.
+
+    METHODS parse_party
+      IMPORTING
+        !io_party_wrap TYPE REF TO if_ixml_element   " cac:AccountingSupplierParty/CustomerParty
+      RETURNING
+        VALUE(rs_party) TYPE zif_zone_iarc_types=>ty_party.
 ENDCLASS.
 
 
@@ -135,38 +141,23 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
 
     rs_header-note = parse_notes( lo_root ).
 
-    " --- Satici (cac:AccountingSupplierParty/cac:Party/...).
-    DATA(lo_supplier_party) = get_child_element( io_scope = lo_root iv_tag_name = 'cac:AccountingSupplierParty' ).
-    IF lo_supplier_party IS BOUND.
-      DATA(lo_supplier) = get_child_element( io_scope = lo_supplier_party iv_tag_name = 'cac:Party' iv_depth = 1 ).
-      IF lo_supplier IS BOUND.
-        DATA(lo_supplier_id) = get_child_element( io_scope = lo_supplier iv_tag_name = 'cac:PartyIdentification' iv_depth = 1 ).
-        IF lo_supplier_id IS BOUND.
-          rs_header-supplier_vkn = get_child_text( io_scope = lo_supplier_id iv_tag_name = 'cbc:ID' ).
-        ENDIF.
-        DATA(lo_supplier_name_el) = get_child_element( io_scope = lo_supplier iv_tag_name = 'cac:PartyName' iv_depth = 1 ).
-        IF lo_supplier_name_el IS BOUND.
-          rs_header-supplier_name = get_child_text( io_scope = lo_supplier_name_el iv_tag_name = 'cbc:Name' ).
-        ENDIF.
-      ENDIF.
+    " --- Satici (cac:AccountingSupplierParty/cac:Party/...) - tam detay
+    "     (adres/vergi dairesi/iletisim) ZONE_IARC_T015'e yazilir.
+    DATA(lo_supplier_wrap) = get_child_element( io_scope = lo_root iv_tag_name = 'cac:AccountingSupplierParty' ).
+    IF lo_supplier_wrap IS BOUND.
+      rs_header-supplier_party = parse_party( lo_supplier_wrap ).
+      rs_header-supplier_vkn   = rs_header-supplier_party-vkn_tckn.
+      rs_header-supplier_name  = rs_header-supplier_party-party_name.
     ENDIF.
 
     " --- Alici (cac:AccountingCustomerParty/cac:Party/...) - gelen belge
     "     senaryosunda genelde bizim sirketimiz; yine de XML'den okunur
-    "     (audit/karsilastirma amacli).
-    DATA(lo_customer_party) = get_child_element( io_scope = lo_root iv_tag_name = 'cac:AccountingCustomerParty' ).
-    IF lo_customer_party IS BOUND.
-      DATA(lo_customer) = get_child_element( io_scope = lo_customer_party iv_tag_name = 'cac:Party' iv_depth = 1 ).
-      IF lo_customer IS BOUND.
-        DATA(lo_customer_id) = get_child_element( io_scope = lo_customer iv_tag_name = 'cac:PartyIdentification' iv_depth = 1 ).
-        IF lo_customer_id IS BOUND.
-          rs_header-customer_vkn = get_child_text( io_scope = lo_customer_id iv_tag_name = 'cbc:ID' ).
-        ENDIF.
-        DATA(lo_customer_name_el) = get_child_element( io_scope = lo_customer iv_tag_name = 'cac:PartyName' iv_depth = 1 ).
-        IF lo_customer_name_el IS BOUND.
-          rs_header-customer_name = get_child_text( io_scope = lo_customer_name_el iv_tag_name = 'cbc:Name' ).
-        ENDIF.
-      ENDIF.
+    "     (audit/karsilastirma amacli). Tam detay ZONE_IARC_T016'ya yazilir.
+    DATA(lo_customer_wrap) = get_child_element( io_scope = lo_root iv_tag_name = 'cac:AccountingCustomerParty' ).
+    IF lo_customer_wrap IS BOUND.
+      rs_header-customer_party = parse_party( lo_customer_wrap ).
+      rs_header-customer_vkn   = rs_header-customer_party-vkn_tckn.
+      rs_header-customer_name  = rs_header-customer_party-party_name.
     ENDIF.
 
     " --- Tutar toplamlari (cac:LegalMonetaryTotal - tekil blok).
@@ -269,6 +260,62 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
     IF lo_line_tax IS BOUND.
       rs_line-tax_amount   = get_child_text( io_scope = lo_line_tax iv_tag_name = 'cbc:TaxAmount' ).
       rs_line-tax_subtotal = parse_tax_subtotals( lo_line_tax ).
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD parse_party.
+    " io_party_wrap = cac:AccountingSupplierParty veya cac:AccountingCustomerParty;
+    " gercek alanlar bunun tek cocugu olan cac:Party altinda.
+    DATA(lo_party) = get_child_element( io_scope = io_party_wrap iv_tag_name = 'cac:Party' iv_depth = 1 ).
+    IF lo_party IS NOT BOUND.
+      RETURN.
+    ENDIF.
+
+    DATA(lo_id_wrap) = get_child_element( io_scope = lo_party iv_tag_name = 'cac:PartyIdentification' iv_depth = 1 ).
+    IF lo_id_wrap IS BOUND.
+      DATA(lo_id_el) = get_child_element( io_scope = lo_id_wrap iv_tag_name = 'cbc:ID' ).
+      IF lo_id_el IS BOUND.
+        rs_party-vkn_tckn  = lo_id_el->get_value( ).
+        rs_party-scheme_id = lo_id_el->get_attribute( name = 'schemeID' ).
+      ENDIF.
+    ENDIF.
+
+    DATA(lo_name_wrap) = get_child_element( io_scope = lo_party iv_tag_name = 'cac:PartyName' iv_depth = 1 ).
+    IF lo_name_wrap IS BOUND.
+      rs_party-party_name = get_child_text( io_scope = lo_name_wrap iv_tag_name = 'cbc:Name' ).
+    ENDIF.
+
+    " Bireysel musteri (UBL-09 Person element - schemeID=TCKN durumunda).
+    DATA(lo_person) = get_child_element( io_scope = lo_party iv_tag_name = 'cac:Person' iv_depth = 1 ).
+    IF lo_person IS BOUND.
+      rs_party-first_name  = get_child_text( io_scope = lo_person iv_tag_name = 'cbc:FirstName' ).
+      rs_party-family_name = get_child_text( io_scope = lo_person iv_tag_name = 'cbc:FamilyName' ).
+    ENDIF.
+
+    DATA(lo_addr) = get_child_element( io_scope = lo_party iv_tag_name = 'cac:PostalAddress' iv_depth = 1 ).
+    IF lo_addr IS BOUND.
+      rs_party-street      = get_child_text( io_scope = lo_addr iv_tag_name = 'cbc:StreetName' ).
+      rs_party-district    = get_child_text( io_scope = lo_addr iv_tag_name = 'cbc:CitySubdivisionName' ).
+      rs_party-city        = get_child_text( io_scope = lo_addr iv_tag_name = 'cbc:CityName' ).
+      rs_party-postal_zone = get_child_text( io_scope = lo_addr iv_tag_name = 'cbc:PostalZone' ).
+      DATA(lo_country) = get_child_element( io_scope = lo_addr iv_tag_name = 'cac:Country' ).
+      IF lo_country IS BOUND.
+        rs_party-country = get_child_text( io_scope = lo_country iv_tag_name = 'cbc:Name' ).
+      ENDIF.
+    ENDIF.
+
+    DATA(lo_tax_scheme_wrap) = get_child_element( io_scope = lo_party iv_tag_name = 'cac:PartyTaxScheme' iv_depth = 1 ).
+    IF lo_tax_scheme_wrap IS BOUND.
+      DATA(lo_tax_scheme) = get_child_element( io_scope = lo_tax_scheme_wrap iv_tag_name = 'cac:TaxScheme' ).
+      IF lo_tax_scheme IS BOUND.
+        rs_party-tax_office = get_child_text( io_scope = lo_tax_scheme iv_tag_name = 'cbc:Name' ).
+      ENDIF.
+    ENDIF.
+
+    DATA(lo_contact) = get_child_element( io_scope = lo_party iv_tag_name = 'cac:Contact' iv_depth = 1 ).
+    IF lo_contact IS BOUND.
+      rs_party-telephone = get_child_text( io_scope = lo_contact iv_tag_name = 'cbc:Telephone' ).
+      rs_party-email     = get_child_text( io_scope = lo_contact iv_tag_name = 'cbc:ElectronicMail' ).
     ENDIF.
   ENDMETHOD.
 

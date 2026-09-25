@@ -6,11 +6,13 @@ CLASS zcl_zone_iarc_store DEFINITION
   PUBLIC SECTION.
 
     " Parse edilmis UBL canonical modelini (ZIF_ZONE_IARC_TYPES=>ty_header)
-    " normalize tablolara (ZONE_IARC_T009..T014) yazar. Anahtar zinciri:
+    " normalize tablolara (ZONE_IARC_T009..T016) yazar. Anahtar zinciri:
     " BUKRS + ETTN (baslik ve baslik-alt tablolari), + LINE_NO (kalem ve
-    " kalem-alt tablolari). Tekrar cagirma (retry) korumasi yok - yukarida
-    " ZCL_ZONE_IARC_PARSER->is_duplicate( ) ile PROVIDER_DOC_ID bazinda
-    " zaten engelleniyor (bkz. ZCL_ZONE_IARC_POLLER).
+    " kalem-alt tablolari). T015 (gonderici/satici) ve T016 (alici) tam
+    " UBL Party detayini (adres/vergi dairesi/iletisim) tekil (1 belge = 1
+    " satici + 1 alici) tasir. Tekrar cagirma (retry) korumasi yok -
+    " yukarida ZCL_ZONE_IARC_PARSER->is_duplicate( ) ile PROVIDER_DOC_ID
+    " bazinda zaten engelleniyor (bkz. ZCL_ZONE_IARC_POLLER).
 
     METHODS save
       IMPORTING
@@ -54,6 +56,20 @@ CLASS zcl_zone_iarc_store IMPLEMENTATION.
     ls_t009-created_by      = sy-uname.
     GET TIME STAMP FIELD ls_t009-created_at.
     INSERT zone_iarc_t009 FROM @ls_t009.
+
+    " --- T015/T016: Gonderici (satici) / Alici tam Party detayi (tekil) ---
+    IF is_header-supplier_party IS NOT INITIAL.
+      DATA(ls_t015) = CORRESPONDING zone_iarc_t015( is_header-supplier_party ).
+      ls_t015-bukrs = iv_bukrs.
+      ls_t015-ettn  = is_header-uuid.
+      INSERT zone_iarc_t015 FROM @ls_t015.
+    ENDIF.
+    IF is_header-customer_party IS NOT INITIAL.
+      DATA(ls_t016) = CORRESPONDING zone_iarc_t016( is_header-customer_party ).
+      ls_t016-bukrs = iv_bukrs.
+      ls_t016-ettn  = is_header-uuid.
+      INSERT zone_iarc_t016 FROM @ls_t016.
+    ENDIF.
 
     " --- T010: Baslik notlari (tekrarli) ---
     DATA lt_t010 TYPE STANDARD TABLE OF zone_iarc_t010.

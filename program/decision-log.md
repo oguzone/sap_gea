@@ -414,3 +414,43 @@ GEREKÇE: egdp-abap'ta ayni CL_GUI_DOCKING_CONTAINER+CL_GUI_ALV_GRID
 ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap (yeni),
   src/zone_iarc_grid.prog.abap (yeni), src/README.md
 ```
+
+### Karar 016
+
+```text
+KONU: UBL gonderici (satici) ve alici icin ayri, tam detayli tablolar
+KARAR: ZONE_IARC_T015 (Gonderici/Satici) ve ZONE_IARC_T016 (Alici)
+  eklendi - ikisi de MANDT+BUKRS+ETTN key'li (tekil, 1 belge=1 satici+
+  1 alici). Sadece VKN/isim degil, tam UBL Party detayi: adres (sokak/
+  ilce/il/posta kodu/ulke), vergi dairesi (PartyTaxScheme/TaxScheme/
+  Name), iletisim (telefon/e-posta), bireysel musteri icin Person
+  (FirstName/FamilyName, UBL-09). ZIF_ZONE_IARC_TYPES'a ty_party tipi +
+  ty_header'a supplier_party/customer_party alanlari eklendi.
+  ZCL_ZONE_IARC_PARSER'a paylasilan bir PARSE_PARTY metodu eklendi (DRY -
+  hem satici hem alici icin ayni kod kullanilir). T009'daki eski
+  SUPPLIER_VKN/SUPPLIER_NAME/CUSTOMER_VKN/CUSTOMER_NAME alanlari
+  KALDIRILMADI (ZCL_ZONE_IARC_RESOLVER LIFNR eslemesi icin hala bunlari
+  okuyor) - T015/T016 bunlarin uzerine ek detay saglar, mevcut kod
+  bozulmadi.
+SEÇENEKLER: Mevcut T009 alanlarini ty_party ile degistir (invasive,
+  cok sayida cagiran yeri etkiler) / sadece ekle, mevcut alanlari
+  koru (secildi)
+KARAR TARİHİ: 2026-09-25
+KARARI VEREN: Oğuz Sayın
+GEREKÇE: Additive yaklasim, RESOLVER/POLLER/VIEWER/GRID/testler gibi
+  cok sayida mevcut cagiran yerini bozma riskini ortadan kaldirdi;
+  "gereksiz refactor yapma" ilkesiyle tutarli.
+NOT (surec hatasi): Bu degisikligi belgelerken PowerShell'in
+  Get-Content/-replace/Set-Content zinciriyle database-design.md'yi
+  duzenlemeye calisirken dosyanin Turkce karakter kodlamasi bozuldu
+  (UTF-8 mojibake). Hemen fark edilip `git checkout --` ile son commit'e
+  geri donuldu ve degisiklikler Edit tool ile guvenli sekilde tekrar
+  yapildi. Ders: Turkce/UTF-8 metin dosyalarinda asla PowerShell
+  metin degistirme zinciri kullanma, her zaman Edit tool kullan.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_t015.tabl.xml (yeni),
+  src/zone_iarc_t016.tabl.xml (yeni), src/zif_zone_iarc_types.intf.abap,
+  src/zcl_zone_iarc_parser.clas.abap, src/zcl_zone_iarc_store.clas.abap,
+  src/zcl_zone_iarc_mock.clas.abap, src/zcl_zone_iarc_parser.clas.testclasses.abap,
+  architecture/database-design.md, architecture/technical-architecture.md,
+  architecture/class-design.md, src/README.md
+```

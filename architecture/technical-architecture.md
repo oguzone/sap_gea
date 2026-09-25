@@ -39,7 +39,8 @@ ZCL_ZONE_IARC_PARSER   → UBL parse + zorunlu alan/şema kontrolü
 ZCL_ZONE_IARC_STORE    → normalize UBL modeli yazılır: ZONE_IARC_T009 (başlık,
         │                 tam tutar dökümü) + T010 (başlık notu) + T011 (başlık
         │                 vergi alt toplamı) + T012 (kalem) + T013 (kalem notu)
-        │                 + T014 (kalem vergi alt toplamı) — hepsi BUKRS+ETTN
+        │                 + T014 (kalem vergi alt toplamı) + T015 (gönderici tam
+        │                 detayı) + T016 (alıcı tam detayı) — hepsi BUKRS+ETTN
         │                 (+ kalemler için LINE_NO) ile birbirine bağlı
         ▼
 ZCL_ZONE_IARC_RESOLVER → gönderen VKN/TCKN → SAP tedarikçi (LIFNR)
@@ -66,7 +67,7 @@ ZCL_ZONE_IARC_LOG + ZONE_IARC_T008 — her adım (istek/cevap/hata) loglanır
 2. Provider Adapter (`ZIF_ZONE_IARC_PROVIDER` + `ZCL_ZONE_IARC_PROVIDER` / `ZCL_ZONE_IARC_MOCK`)
 3. Parse / Store / Resolve / Map (`ZCL_ZONE_IARC_PARSER`, `ZCL_ZONE_IARC_STORE`, `ZCL_ZONE_IARC_RESOLVER`, `ZCL_ZONE_IARC_MAPPER`)
 4. Posting (`ZCL_ZONE_IARC_POST`) — standart SAP FI/MM BAPI'ları
-5. Persistence/Log (`ZONE_IARC_T006/T007/T008` kuyruk+XML+log, `ZONE_IARC_T009..T014` normalize UBL verisi, `ZCL_ZONE_IARC_LOG`)
+5. Persistence/Log (`ZONE_IARC_T006/T007/T008` kuyruk+XML+log, `ZONE_IARC_T009..T016` normalize UBL verisi, `ZCL_ZONE_IARC_LOG`)
 6. Configuration (`ZCL_ZONE_IARC_CONFIG`, `ZONE_IARC_T001..T005`)
 7. Cockpit (`ZCL_ZONE_IARC_COCKPIT`)
 

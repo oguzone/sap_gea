@@ -3,7 +3,7 @@ INTERFACE zif_zone_iarc_types
 
   " DDIC-bagimsiz canonical model. ZCL_ZONE_IARC_PARSER, UBL-TR ArchiveInvoice
   " XML'ini bu yapilara cevirir; ZCL_ZONE_IARC_STORE bunlari ZONE_IARC_T009..
-  " T014 tablolarina yazar; ZCL_ZONE_IARC_MAPPER/_POST da bu yapilardan okur.
+  " T016 tablolarina yazar; ZCL_ZONE_IARC_MAPPER/_POST da bu yapilardan okur.
   " Alan kapsami sap-edonusum-team/program/ubl-tr-field-inventory.md
   " referans alinarak secildi (giden e-Fatura icin yazilmis olsa da
   " ArchiveInvoice ayni cbc:/cac: temel yapisini paylasir) - tam sema
@@ -45,6 +45,23 @@ INTERFACE zif_zone_iarc_types
   TYPES tt_tax_subtotal TYPE STANDARD TABLE OF ty_tax_subtotal WITH EMPTY KEY.
 
   TYPES:
+    BEGIN OF ty_party,
+      vkn_tckn    TYPE string,   " PartyIdentification/ID
+      scheme_id   TYPE string,   " PartyIdentification/ID/@schemeID - "VKN"/"TCKN"
+      party_name  TYPE string,   " PartyName/Name - kurumsal unvan
+      first_name  TYPE string,   " Person/FirstName - bireysel (UBL-09)
+      family_name TYPE string,   " Person/FamilyName - bireysel (UBL-09)
+      street      TYPE string,   " PostalAddress/StreetName
+      district    TYPE string,   " PostalAddress/CitySubdivisionName - ilce
+      city        TYPE string,   " PostalAddress/CityName - il
+      postal_zone TYPE string,   " PostalAddress/PostalZone
+      country     TYPE string,   " PostalAddress/Country/Name
+      tax_office  TYPE string,   " PartyTaxScheme/TaxScheme/Name - vergi dairesi
+      telephone   TYPE string,   " Contact/Telephone
+      email       TYPE string,   " Contact/ElectronicMail
+    END OF ty_party.
+
+  TYPES:
     BEGIN OF ty_line,
       line_no      TYPE i,
       description  TYPE string,
@@ -72,6 +89,8 @@ INTERFACE zif_zone_iarc_types
       supplier_name     TYPE string,
       customer_vkn      TYPE string,   " gelen belge senaryosunda genelde bizim sirketimiz
       customer_name     TYPE string,
+      supplier_party    TYPE ty_party,   " tam gonderici detayi (adres/vergi dairesi/iletisim) - ZONE_IARC_T015
+      customer_party    TYPE ty_party,   " tam alici detayi - ZONE_IARC_T016
       line_ext_amount   TYPE p LENGTH 13 DECIMALS 2,   " LegalMonetaryTotal/LineExtensionAmount
       tax_excl_amount   TYPE p LENGTH 13 DECIMALS 2,   " .../TaxExclusiveAmount
       tax_incl_amount   TYPE p LENGTH 13 DECIMALS 2,   " .../TaxInclusiveAmount

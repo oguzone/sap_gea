@@ -12,6 +12,8 @@ CLASS ltc_parser DEFINITION FINAL FOR TESTING
     METHODS header_fields FOR TESTING RAISING cx_static_check.
     METHODS header_note FOR TESTING RAISING cx_static_check.
     METHODS header_tax_subtotal FOR TESTING RAISING cx_static_check.
+    METHODS supplier_party_details FOR TESTING RAISING cx_static_check.
+    METHODS customer_party_person FOR TESTING RAISING cx_static_check.
     METHODS line_fields FOR TESTING RAISING cx_static_check.
     METHODS line_note_and_tax FOR TESTING RAISING cx_static_check.
     METHODS missing_mandatory_raises FOR TESTING RAISING cx_static_check.
@@ -43,10 +45,17 @@ CLASS ltc_parser IMPLEMENTATION.
       |<cac:AccountingSupplierParty><cac:Party>| &&
       |<cac:PartyIdentification><cbc:ID schemeID="VKN">2222222222</cbc:ID></cac:PartyIdentification>| &&
       |<cac:PartyName><cbc:Name>Test Tedarikci A.S.</cbc:Name></cac:PartyName>| &&
+      |<cac:PostalAddress><cbc:StreetName>Test Cad. No:1</cbc:StreetName>| &&
+      |<cbc:CitySubdivisionName>Kadikoy</cbc:CitySubdivisionName><cbc:CityName>Istanbul</cbc:CityName>| &&
+      |<cbc:PostalZone>34000</cbc:PostalZone><cac:Country><cbc:Name>Turkiye</cbc:Name></cac:Country>| &&
+      |</cac:PostalAddress>| &&
+      |<cac:PartyTaxScheme><cac:TaxScheme><cbc:Name>Kadikoy VD</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>| &&
+      |<cac:Contact><cbc:Telephone>02161234567</cbc:Telephone><cbc:ElectronicMail>satici@test.com</cbc:ElectronicMail></cac:Contact>| &&
       |</cac:Party></cac:AccountingSupplierParty>| &&
       |<cac:AccountingCustomerParty><cac:Party>| &&
-      |<cac:PartyIdentification><cbc:ID schemeID="VKN">3333333333</cbc:ID></cac:PartyIdentification>| &&
+      |<cac:PartyIdentification><cbc:ID schemeID="TCKN">33333333333</cbc:ID></cac:PartyIdentification>| &&
       |<cac:PartyName><cbc:Name>Test Alici Ltd.</cbc:Name></cac:PartyName>| &&
+      |<cac:Person><cbc:FirstName>Ahmet</cbc:FirstName><cbc:FamilyName>Yilmaz</cbc:FamilyName></cac:Person>| &&
       |</cac:Party></cac:AccountingCustomerParty>| &&
       |<cac:TaxTotal><cbc:TaxAmount>36.00</cbc:TaxAmount>| &&
       |<cac:TaxSubtotal><cbc:TaxableAmount>200.00</cbc:TaxableAmount><cbc:TaxAmount>36.00</cbc:TaxAmount>| &&
@@ -89,7 +98,7 @@ CLASS ltc_parser IMPLEMENTATION.
     cl_abap_unit_assert=>assert_equals( act = ls_header-copy_indicator exp = abap_false ).
     cl_abap_unit_assert=>assert_equals( act = ls_header-supplier_vkn  exp = '2222222222' ).
     cl_abap_unit_assert=>assert_equals( act = ls_header-supplier_name exp = 'Test Tedarikci A.S.' ).
-    cl_abap_unit_assert=>assert_equals( act = ls_header-customer_vkn  exp = '3333333333' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_header-customer_vkn  exp = '33333333333' ).
     cl_abap_unit_assert=>assert_equals( act = ls_header-customer_name exp = 'Test Alici Ltd.' ).
     cl_abap_unit_assert=>assert_equals( act = ls_header-currency        exp = 'TRY' ).
     cl_abap_unit_assert=>assert_equals( act = ls_header-line_ext_amount exp = '200.00' ).
@@ -117,6 +126,34 @@ CLASS ltc_parser IMPLEMENTATION.
     cl_abap_unit_assert=>assert_equals( act = ls_sub-tax_percent    exp = '18.00' ).
     cl_abap_unit_assert=>assert_equals( act = ls_sub-tax_cat_name   exp = 'KDV' ).
     cl_abap_unit_assert=>assert_equals( act = ls_sub-tax_type_code  exp = '0015' ).
+  ENDMETHOD.
+
+  METHOD supplier_party_details.
+    DATA(ls_header) = mo_cut->parse( build_test_xml( ) ).
+    DATA(ls_party) = ls_header-supplier_party.
+
+    cl_abap_unit_assert=>assert_equals( act = ls_party-vkn_tckn    exp = '2222222222' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-scheme_id   exp = 'VKN' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-party_name  exp = 'Test Tedarikci A.S.' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-street      exp = 'Test Cad. No:1' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-district    exp = 'Kadikoy' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-city        exp = 'Istanbul' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-postal_zone exp = '34000' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-country     exp = 'Turkiye' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-tax_office  exp = 'Kadikoy VD' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-telephone   exp = '02161234567' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-email       exp = 'satici@test.com' ).
+  ENDMETHOD.
+
+  METHOD customer_party_person.
+    " Bireysel musteri (UBL-09 Person element, schemeID=TCKN).
+    DATA(ls_header) = mo_cut->parse( build_test_xml( ) ).
+    DATA(ls_party) = ls_header-customer_party.
+
+    cl_abap_unit_assert=>assert_equals( act = ls_party-vkn_tckn    exp = '33333333333' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-scheme_id   exp = 'TCKN' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-first_name  exp = 'Ahmet' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_party-family_name exp = 'Yilmaz' ).
   ENDMETHOD.
 
   METHOD line_fields.
