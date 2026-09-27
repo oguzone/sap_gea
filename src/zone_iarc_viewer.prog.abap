@@ -197,11 +197,28 @@ START-OF-SELECTION.
   IF gt_list IS INITIAL.
     MESSAGE 'Secim kriterlerine uyan belge yok' TYPE 'S' DISPLAY LIKE 'W'.
   ELSE.
-    " I_STRUCTURE_NAME verilmedi (GT_LIST birlestirilmis/yerel bir tip,
-    " tek bir DDIC yapisina karsilik gelmiyor) - ALV kolon basliklari bu
-    " yuzden teknik alan adi olarak gorunur (kucuk kozmetik eksik,
-    " fonksiyonel sorun degil).
+    " GT_LIST yerel bir tip (T006+T009 birlesimi), tek bir DDIC yapisi
+    " yok - I_STRUCTURE_NAME verilemedigi icin alan katalogu elle kurulur,
+    " yoksa "alan katalogu bulunamadi" hatasi alinir.
+    DATA(lt_fcat) = VALUE slis_t_fieldcat_alv(
+      ddictxt = 'M'
+      ( fieldname = 'PROVIDER_DOC_ID' ref_tabname = 'ZONE_IARC_T006' ref_fieldname = 'PROVIDER_DOC_ID' seltext_m = 'Fatura No (Bayt)' )
+      ( fieldname = 'INVOICE_ID'      ref_tabname = 'ZONE_IARC_T009' ref_fieldname = 'INVOICE_ID'      seltext_m = 'UBL Fatura No' )
+      ( fieldname = 'ETTN'            ref_tabname = 'ZONE_IARC_T006' ref_fieldname = 'ETTN'            seltext_m = 'ETTN' )
+      ( fieldname = 'BUKRS'           ref_tabname = 'ZONE_IARC_T006' ref_fieldname = 'BUKRS'           seltext_m = 'Sirket Kodu' )
+      ( fieldname = 'STATUS'          ref_tabname = 'ZONE_IARC_T006' ref_fieldname = 'STATUS'          seltext_m = 'Durum' )
+      ( fieldname = 'SUPPLIER_VKN'    ref_tabname = 'ZONE_IARC_T006' ref_fieldname = 'SUPPLIER_VKN'    seltext_m = 'Satici VKN' )
+      ( fieldname = 'SUPPLIER_NAME'   ref_tabname = 'ZONE_IARC_T009' ref_fieldname = 'SUPPLIER_NAME'   seltext_m = 'Satici Adi' )
+      ( fieldname = 'DOC_DATE'        ref_tabname = 'ZONE_IARC_T006' ref_fieldname = 'DOC_DATE'        seltext_m = 'Fatura Tarihi' )
+      ( fieldname = 'AMOUNT'          ref_tabname = 'ZONE_IARC_T006' ref_fieldname = 'AMOUNT'          seltext_m = 'Tutar'
+        cfieldname = 'CURRENCY' )
+      ( fieldname = 'CURRENCY'        ref_tabname = 'ZONE_IARC_T006' ref_fieldname = 'CURRENCY'        seltext_m = 'Para Birimi' )
+      ( fieldname = 'PAYABLE_AMOUNT'  ref_tabname = 'ZONE_IARC_T009' ref_fieldname = 'PAYABLE_AMOUNT'  seltext_m = 'Odenecek Tutar'
+        cfieldname = 'CURRENCY' ) ) ##NO_TEXT.
+
     CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+        it_fieldcat   = lt_fcat
       TABLES
         t_outtab      = gt_list
       EXCEPTIONS

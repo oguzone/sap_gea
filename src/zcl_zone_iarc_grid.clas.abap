@@ -74,6 +74,14 @@ CLASS zcl_zone_iarc_grid DEFINITION
     METHODS show_detail.
     METHODS rebuild_bottom_grid.
 
+    " Yerel tipli tablolar (ty_master, ty_kv) icin DDIC yapisi yok -
+    " I_STRUCTURE_NAME verilemedigi icin alan katalogu elle kurulur,
+    " yoksa CL_GUI_ALV_GRID "alan katalogu bulunamadi" hatasi verir.
+    METHODS build_master_fcat
+      RETURNING VALUE(rt_fcat) TYPE lvc_t_fcat.
+    METHODS build_kv_fcat
+      RETURNING VALUE(rt_fcat) TYPE lvc_t_fcat.
+
     METHODS handle_top_toolbar
       FOR EVENT toolbar OF cl_gui_alv_grid
       IMPORTING e_object.
@@ -156,11 +164,36 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       cwidth_opt = abap_true
       grid_title = |Gelen e-Arsiv Belgeleri ({ lines( mt_master ) } kayit)| ) ##NO_TEXT.
 
+    DATA(lt_fcat) = build_master_fcat( ).
+
     mo_top_grid->set_table_for_first_display(
       EXPORTING
-        is_layout  = ls_layout
+        is_layout       = ls_layout
       CHANGING
-        it_outtab  = mt_master ).
+        it_outtab       = mt_master
+        it_fieldcatalog = lt_fcat ).
+  ENDMETHOD.
+
+  METHOD build_master_fcat.
+    " REF_TABLE/REF_FIELD -> tip/uzunluk DDIC'ten gelir; COLTEXT -> baslik.
+    rt_fcat = VALUE #(
+      ( fieldname = 'PROVIDER_DOC_ID' ref_table = 'ZONE_IARC_T006' ref_field = 'PROVIDER_DOC_ID' coltext = 'Fatura No (Bayt)' )
+      ( fieldname = 'INVOICE_ID'      ref_table = 'ZONE_IARC_T009' ref_field = 'INVOICE_ID'      coltext = 'UBL Fatura No' )
+      ( fieldname = 'ETTN'            ref_table = 'ZONE_IARC_T006' ref_field = 'ETTN'            coltext = 'ETTN' )
+      ( fieldname = 'BUKRS'           ref_table = 'ZONE_IARC_T006' ref_field = 'BUKRS'           coltext = 'Sirket Kodu' )
+      ( fieldname = 'STATUS'          ref_table = 'ZONE_IARC_T006' ref_field = 'STATUS'          coltext = 'Durum' )
+      ( fieldname = 'SUPPLIER_VKN'    ref_table = 'ZONE_IARC_T006' ref_field = 'SUPPLIER_VKN'    coltext = 'Satici VKN/TCKN' )
+      ( fieldname = 'SUPPLIER_NAME'   ref_table = 'ZONE_IARC_T009' ref_field = 'SUPPLIER_NAME'   coltext = 'Satici Adi' )
+      ( fieldname = 'DOC_DATE'        ref_table = 'ZONE_IARC_T006' ref_field = 'DOC_DATE'        coltext = 'Fatura Tarihi' )
+      ( fieldname = 'AMOUNT'          ref_table = 'ZONE_IARC_T006' ref_field = 'AMOUNT'          coltext = 'Tutar'
+        cfieldname = 'CURRENCY' )
+      ( fieldname = 'CURRENCY'        ref_table = 'ZONE_IARC_T006' ref_field = 'CURRENCY'        coltext = 'Para Birimi' ) ) ##NO_TEXT.
+  ENDMETHOD.
+
+  METHOD build_kv_fcat.
+    rt_fcat = VALUE #(
+      ( fieldname = 'LABEL' coltext = 'Alan'  inttype = 'C' intlen = 40 outputlen = 30 )
+      ( fieldname = 'VALUE' coltext = 'Deger' inttype = 'C' intlen = 40 outputlen = 25 ) ) ##NO_TEXT.
   ENDMETHOD.
 
   METHOD handle_top_toolbar.
@@ -254,9 +287,11 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
           EXPORTING is_layout = ls_layout i_structure_name = 'ZONE_IARC_T010'
           CHANGING  it_outtab = mt_detail_note ).
       WHEN 'TOTAL'.
+        DATA(lt_kv_fcat) = build_kv_fcat( ).
         mo_bottom_grid->set_table_for_first_display(
-          EXPORTING is_layout = ls_layout
-          CHANGING  it_outtab = mt_detail_total ).
+          EXPORTING is_layout       = ls_layout
+          CHANGING  it_outtab       = mt_detail_total
+                    it_fieldcatalog = lt_kv_fcat ).
     ENDCASE.
   ENDMETHOD.
 
