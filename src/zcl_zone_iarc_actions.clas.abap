@@ -42,6 +42,12 @@ CLASS zcl_zone_iarc_actions DEFINITION
       RETURNING
         VALUE(rs_outcome)   TYPE ty_outcome.
 
+    METHODS post_fb60
+      IMPORTING
+        !iv_provider_doc_id TYPE zone_iarc_t006-provider_doc_id
+      RETURNING
+        VALUE(rs_outcome)   TYPE ty_outcome.
+
     " Olusan muhasebe belgesini standart ekranda gosterir:
     " MIRO belgesi -> MIR4, FI belgesi -> FB03 (park ise FBV3).
     METHODS display_document
@@ -77,6 +83,14 @@ CLASS zcl_zone_iarc_actions DEFINITION
         !iv_provider_doc_id TYPE zone_iarc_t006-provider_doc_id
         !iv_step            TYPE zone_iarc_t008-step
         !iv_message         TYPE string
+      RETURNING
+        VALUE(rs_outcome)   TYPE ty_outcome.
+
+    " FB01/FB60 ortak akisi: durum kontrolu -> oneri -> ekran -> T006.
+    METHODS post_via_screen
+      IMPORTING
+        !iv_provider_doc_id TYPE zone_iarc_t006-provider_doc_id
+        !iv_tcode           TYPE sy-tcode
       RETURNING
         VALUE(rs_outcome)   TYPE ty_outcome.
 
@@ -173,23 +187,34 @@ CLASS zcl_zone_iarc_actions IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD post_fb01.
+    rs_outcome = post_via_screen( iv_provider_doc_id = iv_provider_doc_id iv_tcode = 'FB01' ).
+  ENDMETHOD.
+
+  METHOD post_fb60.
+    rs_outcome = post_via_screen( iv_provider_doc_id = iv_provider_doc_id iv_tcode = 'FB60' ).
+  ENDMETHOD.
+
+  METHOD post_via_screen.
     DATA(ls_queue) = read_queue( iv_provider_doc_id ).
     IF ls_queue-status <> 'MAPPED'.
-      rs_outcome = refuse( |FB01 icin durum MAPPED olmali (su an { ls_queue-status }) - once "Yeniden Isle"| ) ##NO_TEXT.
+      rs_outcome = refuse( |{ iv_tcode } icin durum MAPPED olmali (su an { ls_queue-status }) - once "Yeniden Isle"| ) ##NO_TEXT.
       RETURN.
     ENDIF.
 
+    DATA ls_result TYPE zcl_zone_iarc_bdc=>ty_result.
     TRY.
         DATA(ls_proposal) = NEW zcl_zone_iarc_post( )->build_proposal( iv_provider_doc_id ).
-        DATA(ls_result)   = NEW zcl_zone_iarc_fb01( )->run( ls_proposal ).
+        ls_result = SWITCH #( iv_tcode
+          WHEN 'FB60' THEN NEW zcl_zone_iarc_fb60( )->run( ls_proposal )
+          ELSE             NEW zcl_zone_iarc_fb01( )->run( ls_proposal ) ).
       CATCH zcx_zone_iarc_mapping INTO DATA(lx_error).
-        rs_outcome = record_error( iv_provider_doc_id = iv_provider_doc_id iv_step = 'FB01'
+        rs_outcome = record_error( iv_provider_doc_id = iv_provider_doc_id iv_step = CONV #( iv_tcode )
                                    iv_message = lx_error->mv_detail ).
         RETURN.
     ENDTRY.
 
     IF ls_result-belnr IS INITIAL.
-      rs_outcome = refuse( 'FB01 belgesi kaydedilmedi (islem iptal edildi)' ) ##NO_TEXT.
+      rs_outcome = refuse( |{ iv_tcode } belgesi kaydedilmedi (islem iptal edildi)| ) ##NO_TEXT.
       RETURN.
     ENDIF.
 

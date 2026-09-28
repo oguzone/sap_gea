@@ -203,6 +203,10 @@ CLASS zcl_zone_iarc_grid DEFINITION
     METHODS handle_top_double_click
       FOR EVENT double_click OF cl_gui_alv_grid
       IMPORTING e_row.
+    METHODS handle_top_menu_button
+      FOR EVENT menu_button OF cl_gui_alv_grid
+      IMPORTING e_object e_ucomm.
+
     " Fatura no sutunlarinda tek tik (hotspot) = detay
     METHODS handle_top_hotspot
       FOR EVENT hotspot_click OF cl_gui_alv_grid
@@ -360,6 +364,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     SET HANDLER handle_top_user_command FOR mo_top_grid.
     SET HANDLER handle_top_double_click FOR mo_top_grid.
     SET HANDLER handle_top_hotspot      FOR mo_top_grid.
+    SET HANDLER handle_top_menu_button  FOR mo_top_grid.
 
     DATA(ls_layout) = VALUE lvc_s_layo(
       zebra      = abap_true
@@ -424,14 +429,10 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
     APPEND VALUE stb_button( function = 'REPR' icon = icon_execute_object text = 'Yeniden Isle'
                              quickinfo = 'Tedarikci eslemesi/kural kontrolunu tekrarla' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'PARK' icon = icon_incomplete text = 'Park (BAPI)'
-                             quickinfo = 'BAPI ile MIRO park belgesi olustur' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'POST' icon = icon_release text = 'Kesinlestir'
-                             quickinfo = 'Park belgesini kaydet (BAPI)' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'FB01' icon = icon_change text = 'FB01'
-                             quickinfo = 'FB01 ekranlarini doldurarak ac' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'SHOW' icon = icon_display text = 'Muhasebe Belgesi'
-                             quickinfo = 'Olusan belgeyi MIR4/FB03/FBV3 ile goster' ) TO e_object->mt_toolbar ##NO_TEXT.
+    " Muhasebe aksiyonlari tek acilir menude (Karar 030) - icerik
+    " HANDLE_TOP_MENU_BUTTON'da, secili belgenin durumuna gore.
+    APPEND VALUE stb_button( function = 'ACCT' icon = icon_release text = 'Muhasebelestir' butn_type = 2
+                             quickinfo = 'Park (BAPI) / Kesinlestir / FB01 / FB60 / Muhasebe belgesi' ) TO e_object->mt_toolbar ##NO_TEXT.
   ENDMETHOD.
 
   METHOD handle_top_user_command.
@@ -455,9 +456,35 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
           WHEN 'HTML'.
             zcl_zone_iarc_doc_view=>show_html( ls_master-provider_doc_id ).
         ENDCASE.
-      WHEN 'REPR' OR 'PARK' OR 'POST' OR 'FB01' OR 'SHOW'.
+      WHEN 'REPR' OR 'PARK' OR 'POST' OR 'FB01' OR 'FB60' OR 'SHOW'.
         run_action( e_ucomm ).
     ENDCASE.
+  ENDMETHOD.
+
+  METHOD handle_top_menu_button.
+    CHECK e_ucomm = 'ACCT'.
+
+    " Secili belge varsa durumuna uymayan secenekler pasif gosterilir.
+    DATA(ls_master) = current_master( ).
+    DATA(lv_known)  = xsdbool( ls_master IS NOT INITIAL ).
+    DATA(lv_ready)  = xsdbool( lv_known = abap_false OR ls_master-status = 'MAPPED' ).
+    DATA(lv_parked) = xsdbool( lv_known = abap_false
+                               OR ( ls_master-status = 'PARKED' AND ls_master-miro_belnr IS NOT INITIAL ) ).
+    DATA(lv_has_doc) = xsdbool( lv_known = abap_false
+                                OR ls_master-fi_belnr IS NOT INITIAL OR ls_master-miro_belnr IS NOT INITIAL ).
+
+    e_object->add_function( fcode = 'PARK' icon = icon_incomplete text = 'Park (BAPI - MIRO)'
+                            disabled = xsdbool( lv_ready = abap_false ) ) ##NO_TEXT.
+    e_object->add_function( fcode = 'POST' icon = icon_system_okay text = 'Kesinlestir (BAPI)'
+                            disabled = xsdbool( lv_parked = abap_false ) ) ##NO_TEXT.
+    e_object->add_separator( ).
+    e_object->add_function( fcode = 'FB60' icon = icon_change text = 'FB60 ile kaydet (ekran)'
+                            disabled = xsdbool( lv_ready = abap_false ) ) ##NO_TEXT.
+    e_object->add_function( fcode = 'FB01' icon = icon_change text = 'FB01 ile kaydet (ekran)'
+                            disabled = xsdbool( lv_ready = abap_false ) ) ##NO_TEXT.
+    e_object->add_separator( ).
+    e_object->add_function( fcode = 'SHOW' icon = icon_display text = 'Muhasebe belgesini goster'
+                            disabled = xsdbool( lv_has_doc = abap_false ) ) ##NO_TEXT.
   ENDMETHOD.
 
   METHOD run_action.
@@ -484,6 +511,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       WHEN 'PARK' THEN lo_actions->park_bapi( ls_master-provider_doc_id )
       WHEN 'POST' THEN lo_actions->post_parked( ls_master-provider_doc_id )
       WHEN 'FB01' THEN lo_actions->post_fb01( ls_master-provider_doc_id )
+      WHEN 'FB60' THEN lo_actions->post_fb60( ls_master-provider_doc_id )
       WHEN 'SHOW' THEN lo_actions->display_document( ls_master-provider_doc_id ) ).
 
     IF iv_ucomm <> 'SHOW'.

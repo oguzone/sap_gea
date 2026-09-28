@@ -804,3 +804,33 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_t00[1-5].fugr.*, src/zone_iarc_t017
   src/zone_iarc_t00[1-5]s.tobj.xml, src/zone_iarc_t017s.tobj.xml,
   src/zone_iarc_t001/t002/t003/t004/t005/t017.tabl.xml, tools/gen_tmg.py
 ```
+
+### Karar 030
+
+```text
+KONU: FB60 ile kayit + muhasebe butonlarinin duzenlenmesi
+KARAR: (1) Yeni ZCL_ZONE_IARC_FB60: FB60 (Enjoy) tek ekran SAPMF05A 1100
+  BDC - RF05A-BUSCS (R fatura / G alacak dekontu), INVFO-ACCNT/BLDAT/BUDAT/
+  XBLNR/WRBTR/WAERS/XMWST/MWSKZ/SGTXT, G/L satirlari ACGL_ITEM-HKONT/
+  WRBTR/MWSKZ/SGTXT/KOSTL(nn). Sirket kodu popup'i cikmasin diye once
+  SET PARAMETER ID 'BUK'. Belge turu FB60 varsayilani.
+  (2) FB01/FB60 ortak BDC altyapisi yeni ZCL_ZONE_IARC_BDC'ye cikarildi
+  (screen/field, kullanici bicimli tutar/tarih, CALL TRANSACTION NOBIEND,
+  BKPF'den belge dogrulama). ZCL_ZONE_IARC_ACTIONS: POST_FB60 +
+  ortak POST_VIA_SCREEN.
+  (3) Grid: Park/Kesinlestir/FB01/FB60/Muhasebe Belgesi ayri butonlar
+  yerine tek "Muhasebelestir" acilir menu (BUTN_TYPE 2 + MENU_BUTTON
+  olayi). Menu acilirken secili belgenin durumuna uymayan secenekler
+  pasif (MAPPED: Park/FB01/FB60; PARKED+MIRO: Kesinlestir; belge no
+  varsa: Goster). "Yeniden Isle" ayri buton kaldi (muhasebe oncesi adim).
+SEÇENEKLER: Ayri butonlar (arac cubugu kalabalik) / popup ile secim (bir
+  tik fazla, standart disi) / acilir menu (secildi - standart ALV deseni,
+  durum bazli pasiflestirme).
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın (FB60 istegi + buton duzeni sorusu; oneri kabul
+  edildi varsayildi)
+DOGRULANMAMIS: FB60 ekran alan adlari ilk denemede teyit edilmeli.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_bdc.clas.* (yeni),
+  src/zcl_zone_iarc_fb60.clas.* (yeni), src/zcl_zone_iarc_fb01.clas.abap,
+  src/zcl_zone_iarc_actions.clas.abap, src/zcl_zone_iarc_grid.clas.abap
+```
