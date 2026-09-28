@@ -518,3 +518,37 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_incoming*.prog.* (yeni),
   src/zone_iarc_grid.prog.* (silindi), src/zcl_zone_iarc_grid.clas.abap,
   src/README.md
 ```
+
+### Karar 019
+
+```text
+KONU: Manuel UBL aktarim programi (yerel dosyadan test) + ortak intake
+KARAR: (1) Yeni ZONE_IARC_UPLOAD raporu (_TOP/_SEL/_CLS include):
+  yerel XML dosyasini okur, parse eder, on kontrolleri (E/W/I) listeler.
+  Test modu VARSAYILAN ACIK (DB'ye yazmaz). Test kapali ve E seviyesinde
+  hata yoksa belge aktarilir ve COMMIT WORK yapilir. Kuyruk anahtari
+  (PROVIDER_DOC_ID) bos birakilirsa UBL cbc:ID (Bayt InvoiceNo ile ayni).
+  (2) ZCL_ZONE_IARC_POLLER->PROCESS_ONE icindeki kuyruk->park akisi yeni
+  ZCL_ZONE_IARC_INTAKE sinifina tasindi; poller ve manuel yukleme ayni
+  kodu kullanir (ayni belge iki yoldan farkli davranmasin). Intake ek
+  olarak BUKRS+ETTN T009'da varsa STORE oncesi EXCEPTION'a ceker (eskiden
+  duplicate key kisa dokumu riski vardi).
+  (3) ZCL_ZONE_IARC_PARSER etiket eslemesi onek bagimsiz hale getirildi
+  (yalnizca yerel ad - GET_NAME). Eski GET_ELEMENTS_BY_TAG_NAME( 'cbc:X' )
+  cagrisinin gercek GIB dosyalarinda (varsayilan namespace / farkli
+  onek) eslesmeme riski vardi; manuel test ilk gercek dosya ile
+  yapilacagi icin bu risk once kapatildi.
+SEÇENEKLER: Mock provider'i dosyadan okuyacak sekilde degistir
+  (reddedildi - factory/T013 ayari gerektirir, test icin fazla dolayli) /
+  ayri rapor + ortak intake sinifi (secildi)
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın ("test edebilmem icin manuel ubl aktarim
+  programi yap, kendi localimdeki bir belgeyi iceri alip kontrol etmis
+  olayim")
+GEREKÇE: Bayt response semasi (S8) dogrulanmadan da pipeline'in parse/
+  store/grid tarafi gercek bir UBL ile test edilebilir.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_upload*.prog.* (yeni),
+  src/zcl_zone_iarc_intake.clas.* (yeni), src/zcl_zone_iarc_poller.clas.abap,
+  src/zcl_zone_iarc_parser.clas.abap, test-data/ornek-earsiv-ubl.xml (yeni),
+  src/README.md
+```

@@ -20,13 +20,23 @@ CLASS zcl_zone_iarc_parser DEFINITION
 
   PROTECTED SECTION.
   PRIVATE SECTION.
-    " Namespace-literal (cbc:/cac: prefiksi GIB tarafindan sabit kabul
-    " edilir - bkz. sap-edonusum-team/program/ubl-tr-field-inventory.md
-    " §1 "TR namespace"). Gercek namespace-URI farkindaligi (prefiks
-    " degisirse de calisan cozum) icin get_elements_by_tag_name_ns
-    " kullanilmali - bu ilk implementasyon prefiks sabitligine guvenir.
+    " Etiketler okunabilirlik icin 'cbc:UUID' gibi onekli yazilir ama
+    " eslesme YALNIZCA yerel ada (UUID) gore yapilir - gercek dosyalarda
+    " onek farkli olabilir veya varsayilan namespace kullanilabilir
+    " (Karar 019). UBL-TR'de ayni seviyede cbc/cac altinda ayni yerel
+    " adli iki element olmadigi icin onek atlamak guvenlidir.
 
     TYPES ty_elements TYPE STANDARD TABLE OF REF TO if_ixml_element WITH EMPTY KEY.
+
+    " iv_depth: 1 = yalnizca dogrudan cocuklar, 0 = tum alt agac,
+    " n = en fazla n seviye (IF_IXML_ELEMENT->GET_ELEMENTS_BY_TAG_NAME ile ayni).
+    METHODS collect_children
+      IMPORTING
+        !io_scope      TYPE REF TO if_ixml_element
+        !iv_local_name TYPE string
+        !iv_depth      TYPE i
+      CHANGING
+        !ct_elements   TYPE ty_elements.
 
     METHODS get_child_text
       IMPORTING
@@ -320,18 +330,43 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_child_elements.
-    DATA(lo_nodes) = io_scope->get_elements_by_tag_name( depth = iv_depth name = iv_tag_name ).
-    IF lo_nodes IS NOT BOUND.
-      RETURN.
+    " 'cbc:UUID' -> 'UUID' (onek yoksa ad oldugu gibi kalir)
+    DATA(lv_local_name) = iv_tag_name.
+    FIND FIRST OCCURRENCE OF ':' IN iv_tag_name MATCH OFFSET DATA(lv_colon).
+    IF sy-subrc = 0.
+      lv_local_name = substring( val = iv_tag_name off = lv_colon + 1 ).
     ENDIF.
-    DO lo_nodes->get_length( ) TIMES.
-      DATA(lv_idx) = sy-index - 1.
-      DATA(lo_node) = lo_nodes->get_item( lv_idx ).
-      DATA(lo_el) = CAST if_ixml_element( lo_node ).
-      IF lo_el IS BOUND.
-        APPEND lo_el TO rt_elements.
+
+    collect_children(
+      EXPORTING
+        io_scope      = io_scope
+        iv_local_name = lv_local_name
+        iv_depth      = iv_depth
+      CHANGING
+        ct_elements   = rt_elements ).
+  ENDMETHOD.
+
+  METHOD collect_children.
+    DATA(lo_child) = io_scope->get_first_child( ).
+    WHILE lo_child IS BOUND.
+      IF lo_child->get_type( ) = if_ixml_node=>co_node_element.
+        DATA(lo_element) = CAST if_ixml_element( lo_child ).
+        " GET_NAME yerel adi (oneksiz) dondurur
+        IF lo_element->get_name( ) = iv_local_name.
+          APPEND lo_element TO ct_elements.
+        ENDIF.
+        IF iv_depth <> 1.
+          collect_children(
+            EXPORTING
+              io_scope      = lo_element
+              iv_local_name = iv_local_name
+              iv_depth      = COND #( WHEN iv_depth = 0 THEN 0 ELSE iv_depth - 1 )
+            CHANGING
+              ct_elements   = ct_elements ).
+        ENDIF.
       ENDIF.
-    ENDDO.
+      lo_child = lo_child->get_next( ).
+    ENDWHILE.
   ENDMETHOD.
 
   METHOD get_child_element.

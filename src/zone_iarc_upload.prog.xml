@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_PROG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <PROGDIR>
+    <NAME>ZONE_IARC_UPLOAD</NAME>
+    <DBAPL>S</DBAPL>
+    <DBNA>D$</DBNA>
+    <SUBC>1</SUBC>
+    <APPL>S</APPL>
+    <RLOAD>E</RLOAD>
+    <FIXPT>X</FIXPT>
+    <UCCHECK>X</UCCHECK>
+   </PROGDIR>
+   <TPOOL>
+    <item>
+     <ID>R</ID>
+     <ENTRY>Gelen e-Arsiv - Manuel UBL Aktarimi</ENTRY>
+     <LENGTH>35</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>B01</KEY>
+     <ENTRY>Belge</ENTRY>
+     <LENGTH>5</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>B02</KEY>
+     <ENTRY>Calisma Modu</ENTRY>
+     <LENGTH>12</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_BUKRS</KEY>
+     <ENTRY>Sirket Kodu</ENTRY>
+     <LENGTH>19</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_DOCID</KEY>
+     <ENTRY>Belge No (bos=cbc:ID)</ENTRY>
+     <LENGTH>29</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_FILE</KEY>
+     <ENTRY>UBL XML Dosyasi</ENTRY>
+     <LENGTH>23</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_TEST</KEY>
+     <ENTRY>Test Modu (kayit yok)</ENTRY>
+     <LENGTH>29</LENGTH>
+    </item>
+   </TPOOL>
+  </asx:values>
+ </asx:abap>
+</abapGit>

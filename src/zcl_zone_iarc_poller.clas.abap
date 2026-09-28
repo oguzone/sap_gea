@@ -95,103 +95,18 @@ CLASS zcl_zone_iarc_poller IMPLEMENTATION.
         RETURN.
     ENDTRY.
 
-    " Kuyruk + ham XML kaydi (STATUS=NEW -> asagida guncellenecek).
-    DATA ls_queue TYPE zone_iarc_t006.
-    ls_queue-provider_doc_id = is_ref-provider_doc_id.
-    ls_queue-ettn            = is_ref-ettn.
-    ls_queue-bukrs           = iv_bukrs.
-    ls_queue-supplier_vkn    = ls_meta-supplier_vkn.
-    ls_queue-doc_date        = ls_meta-doc_date.
-    ls_queue-amount          = ls_meta-amount.
-    ls_queue-currency        = ls_meta-currency.
-    ls_queue-status          = 'NEW'.
-    ls_queue-received_at     = is_ref-received_at.
-    ls_queue-created_by      = sy-uname.
-    GET TIME STAMP FIELD ls_queue-created_at.
-    INSERT zone_iarc_t006 FROM @ls_queue.
-
-    DATA ls_xml TYPE zone_iarc_t007.
-    ls_xml-provider_doc_id = is_ref-provider_doc_id.
-    ls_xml-xml_raw         = lv_xml.
-    TRY.
-        cl_abap_message_digest=>calculate_hash_for_raw(
-          EXPORTING if_algorithm  = 'SHA256'
-                    if_data       = lv_xml
-          IMPORTING ef_hashstring = ls_xml-checksum ).
-      CATCH cx_abap_message_digest.
-        CLEAR ls_xml-checksum. " bilerek yutuluyor - butunluk dogrulama best-effort (TODO)
-    ENDTRY.
-    GET TIME STAMP FIELD ls_xml-stored_at.
-    INSERT zone_iarc_t007 FROM @ls_xml.
-
-    TRY.
-        DATA(ls_header) = lo_parser->parse( lv_xml ).
-      CATCH zcx_zone_iarc_mapping INTO DATA(lx_mapping).
-        UPDATE zone_iarc_t006 SET status = 'EXCEPTION' error_text = lx_mapping->get_text( )
-          WHERE provider_doc_id = is_ref-provider_doc_id.
-        mo_log->write( iv_provider_doc_id = is_ref-provider_doc_id iv_step = 'PARSE' iv_status = 'ERROR'
-          iv_message = lx_mapping->get_text( ) ).
-        RETURN.
-    ENDTRY.
-
-    UPDATE zone_iarc_t006 SET ettn = ls_header-uuid status = 'PARSED'
-      WHERE provider_doc_id = is_ref-provider_doc_id.
-
-    " UBL modelini normalize tablolara yaz (T009 baslik .. T014 kalem vergi
-    " alt toplami) - kalicilik icin XML'i tekrar parse etmeye gerek kalmaz.
-    NEW zcl_zone_iarc_store( )->save(
+    " Kuyruk/ham XML/parse/store/resolve/map/park - manuel yukleme
+    " (ZONE_IARC_UPLOAD) ile ortak akis (Karar 019).
+    DATA(ls_result) = NEW zcl_zone_iarc_intake( mo_log )->process(
       iv_bukrs           = iv_bukrs
-      iv_provider_doc_id = is_ref-provider_doc_id
-      is_header          = ls_header ).
-    mo_log->write( iv_provider_doc_id = is_ref-provider_doc_id iv_step = 'STORE' iv_status = 'OK' ).
-
-    DATA(lo_resolver) = NEW zcl_zone_iarc_resolver( ).
-    DATA(lv_lifnr)    = lo_resolver->resolve( ls_header-supplier_vkn ).
-    IF lv_lifnr IS INITIAL.
-      UPDATE zone_iarc_t006 SET status = 'EXCEPTION'
-        error_text = |Tedarikci esleme bulunamadi: { ls_header-supplier_vkn }|
-        WHERE provider_doc_id = is_ref-provider_doc_id.
-      mo_log->write( iv_provider_doc_id = is_ref-provider_doc_id iv_step = 'RESOLVE' iv_status = 'ERROR'
-        iv_message = |Tedarikci esleme bulunamadi: { ls_header-supplier_vkn }| ).
-      RETURN.
+      iv_provider_doc_id = CONV #( is_ref-provider_doc_id )
+      iv_xml             = lv_xml
+      is_meta            = ls_meta
+      iv_ettn            = is_ref-ettn
+      iv_received_at     = is_ref-received_at ).
+    IF ls_result-status = 'EXCEPTION'.
+      APPEND VALUE #( type = 'W' message = |{ is_ref-provider_doc_id }: { ls_result-message }| ) TO ct_messages.
     ENDIF.
-    UPDATE zone_iarc_t006 SET lifnr = lv_lifnr WHERE provider_doc_id = is_ref-provider_doc_id.
-
-    DATA(lo_mapper) = NEW zcl_zone_iarc_mapper( ).
-    TRY.
-        DATA(ls_decision) = lo_mapper->decide(
-          iv_bukrs  = iv_bukrs
-          iv_lifnr  = lv_lifnr
-          is_header = ls_header ).
-      CATCH zcx_zone_iarc_mapping INTO lx_mapping.
-        UPDATE zone_iarc_t006 SET status = 'EXCEPTION' error_text = lx_mapping->get_text( )
-          WHERE provider_doc_id = is_ref-provider_doc_id.
-        mo_log->write( iv_provider_doc_id = is_ref-provider_doc_id iv_step = 'MAP' iv_status = 'ERROR'
-          iv_message = lx_mapping->get_text( ) ).
-        RETURN.
-    ENDTRY.
-    UPDATE zone_iarc_t006 SET status = 'MAPPED' WHERE provider_doc_id = is_ref-provider_doc_id.
-
-    DATA(lo_post) = NEW zcl_zone_iarc_post( ).
-    TRY.
-        lo_post->park(
-          EXPORTING
-            iv_bukrs    = iv_bukrs
-            iv_lifnr    = lv_lifnr
-            is_header   = ls_header
-            is_decision = ls_decision
-          IMPORTING
-            ev_fi_belnr   = DATA(lv_fi_belnr)
-            ev_miro_belnr = DATA(lv_miro_belnr) ).
-        UPDATE zone_iarc_t006 SET status = 'PARKED' fi_belnr = lv_fi_belnr miro_belnr = lv_miro_belnr
-          WHERE provider_doc_id = is_ref-provider_doc_id.
-        mo_log->write( iv_provider_doc_id = is_ref-provider_doc_id iv_step = 'PARK' iv_status = 'OK' ).
-      CATCH zcx_zone_iarc_mapping INTO lx_mapping.
-        UPDATE zone_iarc_t006 SET status = 'EXCEPTION' error_text = lx_mapping->get_text( )
-          WHERE provider_doc_id = is_ref-provider_doc_id.
-        mo_log->write( iv_provider_doc_id = is_ref-provider_doc_id iv_step = 'PARK' iv_status = 'ERROR'
-          iv_message = lx_mapping->get_text( ) ).
-    ENDTRY.
   ENDMETHOD.
 
 ENDCLASS.
