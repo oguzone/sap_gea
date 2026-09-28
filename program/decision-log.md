@@ -713,3 +713,22 @@ KARARI VEREN: Oğuz Sayın ("ust alv icin genel top of page ekle,
   orada html birkac veri basacagiz")
 ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap
 ```
+
+### Karar 027
+
+```text
+KONU: Ozet paneli modern HTML - solda sirket bilgileri, sagda grafik/ozet
+KARAR: CL_DD_DOCUMENT (Karar 026) yerine CL_GUI_HTML_VIEWER + yeni
+  ZCL_ZONE_IARC_SUMMARY_HTML sinifi. Panel: sirket karti (T001 BUTXT/
+  ORT01/LAND1/WAERS + ZONE_IARC_T001-COMP_TAX_NO, kullanici/zaman), 4 KPI
+  (toplam belge, toplam tutar, hatali, muhasebe=PARKED+POSTED), SVG
+  halka grafik (durum dagilimi), en yuksek tutarli 5 satici cubuk
+  grafigi. Splitter yukseklikleri 28/37/kalan.
+  Kisit: SAP GUI HTML kontrolu IE motoruyla calisabilir - yalnizca IE11
+  uyumlu CSS (flexbox), inline SVG; JS/dis kutuphane yok; X-UA-Compatible
+  IE=edge. HTML 255 karakterlik satir tablosu ile LOAD_DATA'ya verilir.
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_summary_html.clas.* (yeni),
+  src/zcl_zone_iarc_grid.clas.abap
+```

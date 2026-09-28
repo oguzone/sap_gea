@@ -112,7 +112,7 @@ CLASS zcl_zone_iarc_grid DEFINITION
     DATA mo_splitter    TYPE REF TO cl_gui_splitter_container.
     DATA mo_top_grid    TYPE REF TO cl_gui_alv_grid.
     DATA mo_bottom_grid TYPE REF TO cl_gui_alv_grid.
-    DATA mo_header_doc  TYPE REF TO cl_dd_document.   " ust ALV top-of-page (HTML)
+    DATA mo_header_html TYPE REF TO cl_gui_html_viewer.   " ust ALV ozet paneli (HTML)
 
     DATA mt_master TYPE tt_master.
     DATA ms_filter TYPE ty_filter.
@@ -133,14 +133,10 @@ CLASS zcl_zone_iarc_grid DEFINITION
     " (baslik yalnizca ilk gosterimde kuruluyordu - hep 0 kalirdi).
     METHODS refresh_top_grid.
 
-    " Ust ALV'nin ustundeki HTML ozet alani (top-of-page): sirket kodu,
-    " belge sayisi, para birimi bazinda toplam, durum dagilimi,
-    " kullanici/zaman. Liste her yenilendiginde yeniden cizilir.
+    " Ust ALV'nin ustundeki HTML ozet paneli (ZCL_ZONE_IARC_SUMMARY_HTML):
+    " solda sirket karti, sagda KPI + grafikler. Liste her yenilendiginde
+    " yeniden cizilir (Karar 027).
     METHODS build_header.
-    METHODS add_header_line
-      IMPORTING
-        !iv_label TYPE csequence
-        !iv_value TYPE csequence.
     METHODS master_title
       RETURNING VALUE(rv_title) TYPE lvc_title.
     METHODS build_screen
@@ -250,7 +246,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     IF mo_container IS BOUND.
       mo_container->free( ).
     ENDIF.
-    CLEAR: mo_container, mo_splitter, mo_top_grid, mo_bottom_grid, mo_header_doc.
+    CLEAR: mo_container, mo_splitter, mo_top_grid, mo_bottom_grid, mo_header_html.
   ENDMETHOD.
 
   METHOD refresh_top_grid.
@@ -260,83 +256,38 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD build_header.
-    TYPES:
-      BEGIN OF ty_sum,
-        currency TYPE waers,
-        amount   TYPE p LENGTH 15 DECIMALS 2,
-      END OF ty_sum,
-      BEGIN OF ty_count,
-        status TYPE zone_iarc_t006-status,
-        count  TYPE i,
-      END OF ty_count.
-    DATA lt_sum   TYPE STANDARD TABLE OF ty_sum WITH DEFAULT KEY.
-    DATA lt_count TYPE STANDARD TABLE OF ty_count WITH DEFAULT KEY.
-    DATA lt_bukrs TYPE STANDARD TABLE OF bukrs WITH DEFAULT KEY.
+    TYPES ty_html_line TYPE c LENGTH 255.
+    DATA lt_data TYPE STANDARD TABLE OF ty_html_line WITH DEFAULT KEY.
+    DATA lv_url  TYPE c LENGTH 250.
 
-    DATA ls_sum_wa   TYPE ty_sum.
-    DATA ls_count_wa TYPE ty_count.
-    LOOP AT mt_master INTO DATA(ls_master).
-      ls_sum_wa-currency = ls_master-currency.
-      ls_sum_wa-amount   = ls_master-amount.
-      COLLECT ls_sum_wa INTO lt_sum.
-      ls_count_wa-status = ls_master-status.
-      ls_count_wa-count  = 1.
-      COLLECT ls_count_wa INTO lt_count.
-      IF NOT line_exists( lt_bukrs[ table_line = ls_master-bukrs ] ).
-        APPEND ls_master-bukrs TO lt_bukrs.
-      ENDIF.
-    ENDLOOP.
-
-    DATA lv_bukrs  TYPE string.
-    DATA lv_totals TYPE string.
-    DATA lv_status TYPE string.
-    LOOP AT lt_bukrs INTO DATA(lv_one_bukrs).
-      lv_bukrs = COND #( WHEN lv_bukrs IS INITIAL THEN |{ lv_one_bukrs }| ELSE |{ lv_bukrs }, { lv_one_bukrs }| ).
-    ENDLOOP.
-    LOOP AT lt_sum INTO DATA(ls_sum).
-      DATA(lv_one_total) = |{ ls_sum-amount NUMBER = USER } { ls_sum-currency }|.
-      lv_totals = COND #( WHEN lv_totals IS INITIAL THEN lv_one_total ELSE |{ lv_totals }   { lv_one_total }| ).
-    ENDLOOP.
-    LOOP AT lt_count INTO DATA(ls_count).
-      DATA(lv_one_status) = |{ ls_count-status }: { ls_count-count }|.
-      lv_status = COND #( WHEN lv_status IS INITIAL THEN lv_one_status ELSE |{ lv_status }   { lv_one_status }| ).
-    ENDLOOP.
-
-    " Ilk seferde belge ve HTML kontrolu yaratilir; sonraki cagrilarda ayni
-    " kontrol yeniden kullanilir (reuse_control).
-    DATA(lv_reuse) = xsdbool( mo_header_doc IS BOUND ).
-    IF mo_header_doc IS NOT BOUND.
-      mo_header_doc = NEW cl_dd_document( style = 'ALV_GRID' ).
-    ELSE.
-      mo_header_doc->initialize_document( ).
+    IF mo_header_html IS NOT BOUND.
+      mo_header_html = NEW cl_gui_html_viewer( parent = mo_splitter->get_container( row = 1 column = 1 ) ).
     ENDIF.
 
-    DATA lv_heading TYPE sdydo_text_element.
-    lv_heading = 'Gelen e-Arsiv Belgeleri' ##NO_TEXT.
-    mo_header_doc->add_text( text = lv_heading sap_style = cl_dd_area=>heading ).
-    mo_header_doc->new_line( ).
+    DATA(lv_html) = NEW zcl_zone_iarc_summary_html( )->build(
+                      CORRESPONDING #( mt_master ) ).
 
-    add_header_line( iv_label = 'Sirket Kodu:'   iv_value = lv_bukrs ) ##NO_TEXT.
-    add_header_line( iv_label = 'Belge Sayisi:'  iv_value = |{ lines( mt_master ) }| ) ##NO_TEXT.
-    add_header_line( iv_label = 'Toplam Tutar:'  iv_value = lv_totals ) ##NO_TEXT.
-    add_header_line( iv_label = 'Durum:'         iv_value = lv_status ) ##NO_TEXT.
-    add_header_line( iv_label = 'Kullanici / Zaman:'
-                     iv_value = |{ sy-uname } / { sy-datum DATE = USER } { sy-uzeit TIME = USER }| ) ##NO_TEXT.
+    " HTML kontrolu veriyi 255 karakterlik satir tablosu olarak alir;
+    " satirlar tam uzunlukta birlestirilir (satir sonu eklenmez).
+    DATA(lv_len) = strlen( lv_html ).
+    DATA lv_off   TYPE i.
+    DATA lv_chunk TYPE ty_html_line.
+    WHILE lv_off < lv_len.
+      lv_chunk = substring( val = lv_html off = lv_off len = nmin( val1 = 255 val2 = lv_len - lv_off ) ).
+      APPEND lv_chunk TO lt_data.
+      lv_off = lv_off + 255.
+    ENDWHILE.
 
-    mo_header_doc->merge_document( ).
-    mo_header_doc->display_document(
-      reuse_control = lv_reuse
-      parent        = mo_splitter->get_container( row = 1 column = 1 ) ).
-  ENDMETHOD.
-
-  METHOD add_header_line.
-    DATA lv_text TYPE sdydo_text_element.
-    lv_text = iv_label.
-    mo_header_doc->add_text( text = lv_text sap_emphasis = cl_dd_area=>strong ).
-    mo_header_doc->add_gap( width = 2 ).
-    lv_text = iv_value.
-    mo_header_doc->add_text( text = lv_text ).
-    mo_header_doc->new_line( ).
+    mo_header_html->load_data(
+      IMPORTING
+        assigned_url = lv_url
+      CHANGING
+        data_table   = lt_data
+      EXCEPTIONS
+        OTHERS       = 1 ).
+    IF sy-subrc = 0.
+      mo_header_html->show_url( url = lv_url ).
+    ENDIF.
   ENDMETHOD.
 
   METHOD master_title.
@@ -385,9 +336,9 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       parent  = mo_container
       rows    = 3
       columns = 1 ).
-    " 1 = HTML top-of-page, 2 = belge listesi, 3 = detay (yuzde)
-    mo_splitter->set_row_height( id = 1 height = 18 ).
-    mo_splitter->set_row_height( id = 2 height = 42 ).
+    " 1 = HTML ozet paneli, 2 = belge listesi, 3 = detay (yuzde)
+    mo_splitter->set_row_height( id = 1 height = 28 ).
+    mo_splitter->set_row_height( id = 2 height = 37 ).
   ENDMETHOD.
 
   METHOD build_top_grid.
