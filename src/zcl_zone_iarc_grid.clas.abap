@@ -118,6 +118,7 @@ CLASS zcl_zone_iarc_grid DEFINITION
 
     DATA mv_sel_bukrs TYPE bukrs.
     DATA mv_sel_ettn  TYPE zone_iarc_t006-ettn.
+    DATA mv_sel_invid TYPE zone_iarc_t009-invoice_id.
     DATA mv_mode      TYPE char10 VALUE 'LINE'.  " LINE / TAX / TOTAL / NOTE
 
     DATA mt_detail_line  TYPE STANDARD TABLE OF zone_iarc_t012.
@@ -157,6 +158,23 @@ CLASS zcl_zone_iarc_grid DEFINITION
       RETURNING VALUE(rt_fcat) TYPE lvc_t_fcat.
     METHODS build_kv_fcat
       RETURNING VALUE(rt_fcat) TYPE lvc_t_fcat.
+
+    " T010/T011/T012 alanlarinin cogu veri elemani olmadan (dogrudan tip)
+    " tanimli - DDIC'ten kolon basligi gelmez. Katalog DDIC'ten uretilir,
+    " basliklar COLUMN_TEXT'ten doldurulur, teknik anahtarlar gizlenir.
+    METHODS build_detail_fcat
+      IMPORTING
+        !iv_tabname    TYPE tabname
+      RETURNING
+        VALUE(rt_fcat) TYPE lvc_t_fcat.
+    METHODS column_text
+      IMPORTING
+        !iv_fieldname  TYPE lvc_fname
+      RETURNING
+        VALUE(rv_text) TYPE lvc_txtcol.
+    METHODS bottom_title
+      RETURNING
+        VALUE(rv_title) TYPE lvc_title.
 
     METHODS handle_top_toolbar
       FOR EVENT toolbar OF cl_gui_alv_grid
@@ -399,6 +417,8 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     ENDIF.
     mv_sel_bukrs = is_master-bukrs.
     mv_sel_ettn  = is_master-ettn.
+    mv_sel_invid = COND #( WHEN is_master-invoice_id IS NOT INITIAL THEN is_master-invoice_id
+                           ELSE is_master-provider_doc_id ).
     show_detail( ).
   ENDMETHOD.
 
@@ -474,7 +494,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
   METHOD clear_detail.
     " Silinen belgenin detayi alt gridde kalmasin.
-    CLEAR: mv_sel_bukrs, mv_sel_ettn,
+    CLEAR: mv_sel_bukrs, mv_sel_ettn, mv_sel_invid,
            mt_detail_line, mt_detail_tax, mt_detail_note, mt_detail_total.
     IF mo_bottom_grid IS BOUND.
       mo_bottom_grid->refresh_table_display( ).
@@ -532,27 +552,27 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     SET HANDLER handle_bottom_toolbar      FOR mo_bottom_grid.
     SET HANDLER handle_bottom_user_command FOR mo_bottom_grid.
 
-    DATA(lv_title) = SWITCH string( mv_mode
-      WHEN 'LINE'  THEN 'Kalemler'
-      WHEN 'TAX'   THEN 'Vergi / KDV Bilgileri'
-      WHEN 'NOTE'  THEN 'Notlar'
-      WHEN 'TOTAL' THEN 'Dip Toplamlar'
-      ELSE '' ) ##NO_TEXT.
-    DATA(ls_layout) = VALUE lvc_s_layo( zebra = abap_true cwidth_opt = abap_true grid_title = lv_title ).
+    DATA(ls_layout) = VALUE lvc_s_layo( zebra = abap_true cwidth_opt = abap_true grid_title = bottom_title( ) ).
 
     CASE mv_mode.
       WHEN 'LINE'.
+        DATA(lt_fcat) = build_detail_fcat( 'ZONE_IARC_T012' ).
         mo_bottom_grid->set_table_for_first_display(
-          EXPORTING is_layout = ls_layout i_structure_name = 'ZONE_IARC_T012'
-          CHANGING  it_outtab = mt_detail_line ).
+          EXPORTING is_layout       = ls_layout
+          CHANGING  it_outtab       = mt_detail_line
+                    it_fieldcatalog = lt_fcat ).
       WHEN 'TAX'.
+        lt_fcat = build_detail_fcat( 'ZONE_IARC_T011' ).
         mo_bottom_grid->set_table_for_first_display(
-          EXPORTING is_layout = ls_layout i_structure_name = 'ZONE_IARC_T011'
-          CHANGING  it_outtab = mt_detail_tax ).
+          EXPORTING is_layout       = ls_layout
+          CHANGING  it_outtab       = mt_detail_tax
+                    it_fieldcatalog = lt_fcat ).
       WHEN 'NOTE'.
+        lt_fcat = build_detail_fcat( 'ZONE_IARC_T010' ).
         mo_bottom_grid->set_table_for_first_display(
-          EXPORTING is_layout = ls_layout i_structure_name = 'ZONE_IARC_T010'
-          CHANGING  it_outtab = mt_detail_note ).
+          EXPORTING is_layout       = ls_layout
+          CHANGING  it_outtab       = mt_detail_note
+                    it_fieldcatalog = lt_fcat ).
       WHEN 'TOTAL'.
         DATA(lt_kv_fcat) = build_kv_fcat( ).
         mo_bottom_grid->set_table_for_first_display(
@@ -560,6 +580,73 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
           CHANGING  it_outtab       = mt_detail_total
                     it_fieldcatalog = lt_kv_fcat ).
     ENDCASE.
+  ENDMETHOD.
+
+  METHOD bottom_title.
+    DATA(lv_mode_text) = SWITCH string( mv_mode
+      WHEN 'LINE'  THEN 'Kalemler'
+      WHEN 'TAX'   THEN 'Vergi / KDV Bilgileri'
+      WHEN 'NOTE'  THEN 'Notlar'
+      WHEN 'TOTAL' THEN 'Dip Toplamlar'
+      ELSE '' ) ##NO_TEXT.
+    IF mv_sel_invid IS INITIAL.
+      rv_title = |{ lv_mode_text } - ustten bir belge secin (cift tik, fatura no'ya tik ya da Detay)| ##NO_TEXT.
+    ELSE.
+      rv_title = |{ lv_mode_text } - { mv_sel_invid }| ##NO_TEXT.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD build_detail_fcat.
+    CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+      EXPORTING
+        i_structure_name       = iv_tabname
+      CHANGING
+        ct_fieldcat            = rt_fcat
+      EXCEPTIONS
+        inconsistent_interface = 1
+        program_error          = 2
+        OTHERS                 = 3.
+    IF sy-subrc <> 0.
+      CLEAR rt_fcat.
+      RETURN.
+    ENDIF.
+
+    LOOP AT rt_fcat ASSIGNING FIELD-SYMBOL(<ls_fcat>).
+      CASE <ls_fcat>-fieldname.
+        WHEN 'MANDT'.
+          <ls_fcat>-tech = abap_true.
+        WHEN 'BUKRS' OR 'ETTN'.
+          <ls_fcat>-no_out = abap_true.   " ust gridde zaten var; layout'tan eklenebilir
+      ENDCASE.
+
+      DATA(lv_text) = column_text( <ls_fcat>-fieldname ).
+      IF lv_text IS NOT INITIAL.
+        <ls_fcat>-coltext   = lv_text.
+        <ls_fcat>-reptext   = lv_text.
+        <ls_fcat>-scrtext_l = lv_text.
+        <ls_fcat>-scrtext_m = lv_text.
+        <ls_fcat>-scrtext_s = lv_text.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD column_text.
+    rv_text = SWITCH #( iv_fieldname
+      WHEN 'BUKRS'          THEN 'Sirket Kodu'
+      WHEN 'ETTN'           THEN 'ETTN'
+      WHEN 'SEQ_NO'         THEN 'Sira'
+      WHEN 'LINE_NO'        THEN 'Kalem No'
+      WHEN 'ITEM_NAME'      THEN 'Mal/Hizmet'
+      WHEN 'QUANTITY'       THEN 'Miktar'
+      WHEN 'UOM_CODE'       THEN 'Birim'
+      WHEN 'UNIT_PRICE'     THEN 'Birim Fiyat'
+      WHEN 'LINE_AMOUNT'    THEN 'Tutar'
+      WHEN 'TAX_AMOUNT'     THEN 'Vergi Tutari'
+      WHEN 'TAXABLE_AMOUNT' THEN 'Matrah'
+      WHEN 'TAX_PERCENT'    THEN 'Oran (%)'
+      WHEN 'TAX_CAT_NAME'   THEN 'Vergi Turu'
+      WHEN 'TAX_TYPE_CODE'  THEN 'GIB Vergi Kodu'
+      WHEN 'NOTE_TEXT'      THEN 'Not' ) ##NO_TEXT.
   ENDMETHOD.
 
   METHOD handle_bottom_toolbar.
