@@ -695,3 +695,21 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap,
   src/zcl_zone_iarc_doc_view.clas.* (yeni), src/zone_iarc_viewer.prog.abap,
   src/zone_iarc_incoming_cls.prog.abap, src/zcl_zone_iarc_parser.clas.*
 ```
+
+### Karar 026
+
+```text
+KONU: ZONE_IARC_INCOMING ust ALV icin HTML top-of-page
+KARAR: Splitter 3 satira cikarildi: 1 = CL_DD_DOCUMENT (style ALV_GRID)
+  HTML ozet alani (%18), 2 = belge listesi (%42), 3 = detay. Ozet:
+  sirket kodu(lari), belge sayisi, para birimi bazinda toplam (T006
+  AMOUNT), durum dagilimi, kullanici/zaman. Yenile/Sil sonrasi
+  REFRESH_TOP_GRID ile yeniden cizilir (initialize_document +
+  merge_document + display_document reuse_control).
+  TOP_OF_PAGE olayi / LIST_PROCESSING_EVENTS kullanilmadi - belge
+  dogrudan splitter hucresine basilir (daha az hareketli parca).
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın ("ust alv icin genel top of page ekle,
+  orada html birkac veri basacagiz")
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap
+```
