@@ -732,3 +732,48 @@ KARARI VEREN: Oğuz Sayın
 ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_summary_html.clas.* (yeni),
   src/zcl_zone_iarc_grid.clas.abap
 ```
+
+### Karar 028
+
+```text
+KONU: FI / MIRO kaydi - hem BAPI hem standart ekran (FB01) doldurma
+KARAR:
+  (1) Muhasebe onerisi tek yerde: ZCL_ZONE_IARC_POST->BUILD_PROPOSAL.
+      Kaynak: T006 (LIFNR), T009 (tarih/PB/brut/referans), T011 (KDV alt
+      toplamlari -> her oran bir gider satiri), T005 (siparissiz kural:
+      DEFAULT_HKONT, DEFAULT_MWSKZ, yeni DEFAULT_KOSTL, DEFAULT_BLART -
+      bossa KR), yeni T017 (KDV orani -> vergi kodu; yoksa DEFAULT_MWSKZ).
+      InvoiceTypeCode=IADE -> alacak dekontu (BAPI INVOICE_IND bos, FB01
+      anahtar 21/50).
+  (2) BAPI yolu: BAPI_INCOMINGINVOICE_PARK (G/L satirli, siparissiz;
+      satici HEADERDATA-DIFF_INV, CALC_TAX_IND=X) -> PARKED (MIRO_BELNR +
+      yeni T006-GJAHR); "Kesinlestir": BAPI_INCOMINGINVOICE_POST -> POSTED.
+      Hata: BAPI_TRANSACTION_ROLLBACK + T006-ERROR_TEXT, durum degismez.
+  (3) Ekran yolu: ZCL_ZONE_IARC_FB01 - CALL TRANSACTION 'FB01' WITH
+      AUTHORITY-CHECK, BDC (SAPMF05A 0100/0302/0300), MODE A, UPDATE S,
+      NOBIEND=X: alanlar dolu gelir, veri bitince kullanici devam eder
+      (kontrol eder, kodlama blogunu tamamlar, KAYDET ya da PARK). Belge
+      no mesajlardan alinip BKPF (BUKRS+BELNR+XBLNR) ile dogrulanir;
+      BSTAT=V ise PARKED, degilse POSTED (FI_BELNR + GJAHR).
+  (4) Otomatik park KALDIRILDI: intake/poller belgeyi MAPPED ("muhasebeye
+      hazir") birakir; muhasebe yolu kullanicinin secimi. Yeni
+      INTAKE->REPROCESS (tedarikci eslemesi sonradan yapildiysa T007'den
+      yeniden isler, UBL tablolarini tekrar yazmaz).
+  (5) ZCL_ZONE_IARC_ACTIONS: grid aksiyonlari (durum kontrolu + T006 +
+      log + COMMIT). Grid butonlari: Yeniden Isle, Park (BAPI),
+      Kesinlestir, FB01, Muhasebe Belgesi (MIR4 / FB03 / park ise FBV3).
+KAPSAM DISI: siparisli (PO/GR 3'lu eslesme) - UBL'de siparis referansi
+  okunmuyor; FI park belgesinin (FB01'den park) BAPI ile kesinlestirilmesi
+  (FBV0 ile manuel).
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın ("hem bapi hem de fb01 gibi standart ekranlari
+  acip ilgili alanlari doldursa")
+DOGRULANMAMIS: SAP surumu (S7) - BAPI alan adlari ve FB01 ekran/alan
+  adlari (0302'de BSEG-MWSKZ/BKPF-XMWST, 0300'de COBL-KOSTL) sistemde
+  ilk denemede teyit edilmeli.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_post.clas.abap (yeniden),
+  src/zcl_zone_iarc_fb01.clas.* (yeni), src/zcl_zone_iarc_actions.clas.*
+  (yeni), src/zcl_zone_iarc_intake.clas.abap, src/zcl_zone_iarc_config.clas.abap,
+  src/zcl_zone_iarc_review.clas.abap, src/zcl_zone_iarc_grid.clas.abap,
+  src/zone_iarc_t005/t006.tabl.xml, src/zone_iarc_t017.tabl.xml (yeni)
+```

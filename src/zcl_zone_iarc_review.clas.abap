@@ -57,10 +57,15 @@ CLASS zcl_zone_iarc_review IMPLEMENTATION.
     DATA(lo_post) = NEW zcl_zone_iarc_post( ).
     DATA(lo_log)  = NEW zcl_zone_iarc_log( ).
 
-    lo_post->post_parked(
-      iv_bukrs      = ls_queue-bukrs
-      iv_fi_belnr   = ls_queue-fi_belnr
-      iv_miro_belnr = ls_queue-miro_belnr ).
+    " Yalnizca BAPI ile park edilmis MIRO belgesi kesinlestirilebilir
+    " (FB01'den park edilen FI belgesi FBV0 ile kaydedilir).
+    IF ls_queue-miro_belnr IS INITIAL.
+      RAISE EXCEPTION TYPE zcx_zone_iarc_mapping
+        EXPORTING
+          iv_error_code = 'IARC_REV_004'
+          iv_detail     = |MIRO park belgesi yok - FI park belgesini FBV0 ile kaydedin| ##NO_TEXT.
+    ENDIF.
+    lo_post->post_parked( iv_belnr = ls_queue-miro_belnr iv_gjahr = ls_queue-gjahr ).
 
     UPDATE zone_iarc_t006 SET status = 'POSTED' changed_by = sy-uname
       WHERE provider_doc_id = iv_provider_doc_id.

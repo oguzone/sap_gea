@@ -46,7 +46,19 @@ CLASS zcl_zone_iarc_config DEFINITION
       EXPORTING
         !ev_hkont TYPE saknr
         !ev_mwskz TYPE mwskz
-        !ev_tolerance_pct TYPE i.
+        !ev_tolerance_pct TYPE i
+        !ev_kostl TYPE kostl
+        !ev_blart TYPE blart.
+
+    " UBL KDV oranina (T011-TAX_PERCENT, tam sayi) karsilik SAP vergi kodu
+    " (ZONE_IARC_T017). Esleme yoksa bos doner - cagiran varsayilana
+    " (T005-DEFAULT_MWSKZ) duser.
+    METHODS get_tax_code
+      IMPORTING
+        !iv_bukrs       TYPE bukrs
+        !iv_tax_percent TYPE zone_iarc_t017-tax_percent
+      RETURNING
+        VALUE(rv_mwskz) TYPE mwskz.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
@@ -100,12 +112,20 @@ CLASS zcl_zone_iarc_config IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_posting_rule.
-    SELECT SINGLE default_hkont, default_mwskz, tolerance_pct
+    CLEAR: ev_hkont, ev_mwskz, ev_tolerance_pct, ev_kostl, ev_blart.
+    SELECT SINGLE default_hkont, default_mwskz, tolerance_pct, default_kostl, default_blart
       FROM zone_iarc_t005
-      INTO (@ev_hkont, @ev_mwskz, @DATA(lv_tol))
+      INTO (@ev_hkont, @ev_mwskz, @DATA(lv_tol), @ev_kostl, @ev_blart)
       WHERE bukrs    = @iv_bukrs
         AND po_match = @iv_po_match.
     ev_tolerance_pct = COND #( WHEN sy-subrc = 0 THEN lv_tol ELSE 0 ).
+  ENDMETHOD.
+
+  METHOD get_tax_code.
+    SELECT SINGLE mwskz FROM zone_iarc_t017
+      WHERE bukrs       = @iv_bukrs
+        AND tax_percent = @iv_tax_percent
+      INTO @rv_mwskz.
   ENDMETHOD.
 
 ENDCLASS.

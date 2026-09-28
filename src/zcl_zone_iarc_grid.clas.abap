@@ -155,6 +155,18 @@ CLASS zcl_zone_iarc_grid DEFINITION
         !iv_count          TYPE i
       RETURNING
         VALUE(rv_confirmed) TYPE abap_bool.
+
+    " Muhasebe aksiyonlari (ZCL_ZONE_IARC_ACTIONS - Karar 028): secili
+    " belge icin Yeniden Isle / Park (BAPI) / Kesinlestir / FB01 /
+    " Muhasebe Belgesi.
+    METHODS run_action
+      IMPORTING
+        !iv_ucomm TYPE sy-ucomm.
+    METHODS confirm_action
+      IMPORTING
+        !iv_question        TYPE string
+      RETURNING
+        VALUE(rv_confirmed) TYPE abap_bool.
     METHODS clear_detail.
 
     " Yerel tipli tablolar (ty_master, ty_kv) icin DDIC yapisi yok -
@@ -409,6 +421,17 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
                              quickinfo = 'Ham UBL XML' ) TO e_object->mt_toolbar ##NO_TEXT.
     APPEND VALUE stb_button( function = 'HTML' text = 'HTML Goster'
                              quickinfo = 'Okunabilir fatura gorunumu' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
+    APPEND VALUE stb_button( function = 'REPR' text = 'Yeniden Isle'
+                             quickinfo = 'Tedarikci eslemesi/kural kontrolunu tekrarla' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'PARK' text = 'Park (BAPI)'
+                             quickinfo = 'BAPI ile MIRO park belgesi olustur' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'POST' text = 'Kesinlestir'
+                             quickinfo = 'Park belgesini kaydet (BAPI)' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'FB01' text = 'FB01'
+                             quickinfo = 'FB01 ekranlarini doldurarak ac' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'SHOW' text = 'Muhasebe Belgesi'
+                             quickinfo = 'Olusan belgeyi MIR4/FB03/FBV3 ile goster' ) TO e_object->mt_toolbar ##NO_TEXT.
   ENDMETHOD.
 
   METHOD handle_top_user_command.
@@ -432,7 +455,68 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
           WHEN 'HTML'.
             zcl_zone_iarc_doc_view=>show_html( ls_master-provider_doc_id ).
         ENDCASE.
+      WHEN 'REPR' OR 'PARK' OR 'POST' OR 'FB01' OR 'SHOW'.
+        run_action( e_ucomm ).
     ENDCASE.
+  ENDMETHOD.
+
+  METHOD run_action.
+    DATA(ls_master) = current_master( ).
+    IF ls_master IS INITIAL.
+      MESSAGE 'Once listeden bir satir secin' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
+      RETURN.
+    ENDIF.
+
+    CASE iv_ucomm.
+      WHEN 'PARK'.
+        IF confirm_action( |{ ls_master-provider_doc_id } icin BAPI ile MIRO park belgesi olusturulsun mu?| ) = abap_false.
+          RETURN.
+        ENDIF.
+      WHEN 'POST'.
+        IF confirm_action( |{ ls_master-provider_doc_id } park belgesi kesin kaydedilsin mi?| ) = abap_false.
+          RETURN.
+        ENDIF.
+    ENDCASE.
+
+    DATA(lo_actions) = NEW zcl_zone_iarc_actions( ).
+    DATA(ls_outcome) = SWITCH zcl_zone_iarc_actions=>ty_outcome( iv_ucomm
+      WHEN 'REPR' THEN lo_actions->reprocess( ls_master-provider_doc_id )
+      WHEN 'PARK' THEN lo_actions->park_bapi( ls_master-provider_doc_id )
+      WHEN 'POST' THEN lo_actions->post_parked( ls_master-provider_doc_id )
+      WHEN 'FB01' THEN lo_actions->post_fb01( ls_master-provider_doc_id )
+      WHEN 'SHOW' THEN lo_actions->display_document( ls_master-provider_doc_id ) ).
+
+    IF iv_ucomm <> 'SHOW'.
+      refresh_master( ).
+      refresh_top_grid( ).
+    ENDIF.
+
+    IF ls_outcome-message IS INITIAL.
+      RETURN.
+    ELSEIF ls_outcome-success = abap_true.
+      MESSAGE ls_outcome-message TYPE 'S'.
+    ELSE.
+      MESSAGE ls_outcome-message TYPE 'S' DISPLAY LIKE 'E'.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD confirm_action.
+    DATA lv_answer   TYPE c LENGTH 1.
+    DATA lv_question TYPE c LENGTH 400.
+    lv_question = iv_question.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = 'Muhasebe'
+        text_question         = lv_question
+        text_button_1         = 'Evet'
+        text_button_2         = 'Vazgec'
+        default_button        = '2'
+        display_cancel_button = abap_false
+      IMPORTING
+        answer                = lv_answer
+      EXCEPTIONS
+        OTHERS                = 1 ##NO_TEXT.
+    rv_confirmed = xsdbool( sy-subrc = 0 AND lv_answer = '1' ).
   ENDMETHOD.
 
   METHOD current_master.
