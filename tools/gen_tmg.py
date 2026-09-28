@@ -75,26 +75,64 @@ def rename(text, tab):
     return text
 
 
+# Sutun basliklari - SABIT metin (sozlukten degil). Veri elemani olmayan
+# alanlarda SAP basligi alan uzunlugundan hesaplar; ekran metni en fazla
+# 132 olabildigi icin CHAR 255 alan "LENGTH has invalid value 255" ile
+# import'u bozar. Ayrica XFELD gibi genel veri elemanlarinin basligi
+# anlamsiz. Bosluk yerine '_' (ekranda bosluk gorunur).
+LABELS = {
+    'BUKRS': 'Sirket Kodu',
+    'PO_MATCH': 'Siparisli',
+    'DEFAULT_HKONT': 'Gider Hesabi',
+    'DEFAULT_MWSKZ': 'Vergi Kodu',
+    'DEFAULT_KOSTL': 'Masraf Yeri',
+    'DEFAULT_BLART': 'Belge Turu',
+    'TOLERANCE_PCT': 'Tolerans %',
+    'ACTIVE_FLG': 'Aktif',
+    'POLL_INTERVAL_MIN': 'Sorgu Araligi (dk)',
+    'ENVIRONMENT': 'Ortam',
+    'COMP_TAX_NO': 'Sirket VKN',
+    'COMP_SERIAL_NO': 'Sirket Seri No',
+    'ACC_USER_CODE': 'Muhasebeci Kullanici',
+    'ACC_TAX_NO': 'Muhasebeci VKN',
+    'ACC_PWD_KEY': 'Sifre Anahtari (SecStore)',
+    'PROVIDER_KEY': 'Entegrator',
+    'PROVIDER_NAME': 'Entegrator Adi',
+    'ADAPTER_CLASS': 'Adapter Sinifi',
+    'PROTOCOL': 'Protokol',
+    'SERVICE_TYPE': 'Servis Tipi',
+    'ENDPOINT_URL': 'Servis URL',
+    'TIMEOUT_SEC': 'Zaman Asimi (sn)',
+    'RETRY_COUNT': 'Tekrar',
+    'AUTH_TYPE': 'Kimlik Dogrulama',
+    'STRUST_PSE': 'STRUST PSE',
+    'SECSTORE_KEY': 'Sifre Anahtari (SecStore)',
+    'VKN_TCKN': 'VKN/TCKN',
+    'LIFNR': 'Tedarikci',
+    'TAX_PERCENT': 'KDV Orani %',
+    'MWSKZ': 'Vergi Kodu',
+}
+
+
 def text_field(tab, f, col):
-    mod = '4' if f['key'] else 'V'
+    label = LABELS.get(f['name'], f['name']).replace(' ', '_')[:40]
     return (
         '      <RPY_DYFATC>\n'
         '       <CONT_TYPE>TABLE_CTRL</CONT_TYPE>\n'
         '       <CONT_NAME>TCTRL_%s</CONT_NAME>\n'
         '       <TYPE>TEXT</TYPE>\n'
         '       <NAME>*%s-%s</NAME>\n'
+        '       <TEXT>%s</TEXT>\n'
         '       <LINE>001</LINE>\n'
         '       <COLUMN>%03d</COLUMN>\n'
-        '       <LENGTH>040</LENGTH>\n'
+        '       <LENGTH>%03d</LENGTH>\n'
         '       <VISLENGTH>%03d</VISLENGTH>\n'
         '       <HEIGHT>001</HEIGHT>\n'
         '       <FORMAT>CHAR</FORMAT>\n'
-        '       <FROM_DICT>X</FROM_DICT>\n'
-        '       <MODIFIC>%s</MODIFIC>\n'
         '       <REQU_ENTRY>N</REQU_ENTRY>\n'
         '       <TC_HEADING>X</TC_HEADING>\n'
         '      </RPY_DYFATC>\n'
-    ) % (tab, tab, f['name'], col, f['len'], mod)
+    ) % (tab, tab, f['name'], label, col, len(label), len(label))
 
 
 def template_field(tab, f, col):
