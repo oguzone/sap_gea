@@ -34,8 +34,8 @@ CLASS zcl_zone_iarc_poller IMPLEMENTATION.
     TRY.
         DATA(lo_provider) = zcl_zone_iarc_factory=>get_provider( iv_bukrs ).
       CATCH zcx_zone_iarc_provider INTO DATA(lx_provider).
-        mo_log->write( iv_step = 'POLL' iv_status = 'ERROR' iv_message = lx_provider->get_text( ) ).
-        APPEND VALUE #( type = 'E' message = lx_provider->get_text( ) ) TO rt_messages.
+        mo_log->write( iv_step = 'POLL' iv_status = 'ERROR' iv_message = |{ lx_provider->mv_error_code } { lx_provider->mv_detail }| ).
+        APPEND VALUE #( type = 'E' message = |{ lx_provider->mv_error_code } { lx_provider->mv_detail }| ) TO rt_messages.
         RETURN.
     ENDTRY.
 
@@ -53,8 +53,8 @@ CLASS zcl_zone_iarc_poller IMPLEMENTATION.
     TRY.
         DATA(lt_refs) = lo_provider->list_new_documents( iv_bukrs = iv_bukrs iv_since = lv_since ).
       CATCH zcx_zone_iarc_provider INTO lx_provider.
-        mo_log->write( iv_step = 'POLL' iv_status = 'ERROR' iv_message = lx_provider->get_text( ) ).
-        APPEND VALUE #( type = 'E' message = lx_provider->get_text( ) ) TO rt_messages.
+        mo_log->write( iv_step = 'POLL' iv_status = 'ERROR' iv_message = |{ lx_provider->mv_error_code } { lx_provider->mv_detail }| ).
+        APPEND VALUE #( type = 'E' message = |{ lx_provider->mv_error_code } { lx_provider->mv_detail }| ) TO rt_messages.
         RETURN.
     ENDTRY.
 
@@ -90,8 +90,8 @@ CLASS zcl_zone_iarc_poller IMPLEMENTATION.
                     es_meta            = DATA(ls_meta) ).
       CATCH zcx_zone_iarc_provider INTO DATA(lx_provider).
         mo_log->write( iv_provider_doc_id = is_ref-provider_doc_id iv_step = 'FETCH' iv_status = 'ERROR'
-          iv_message = lx_provider->get_text( ) ).
-        APPEND VALUE #( type = 'E' message = lx_provider->get_text( ) ) TO ct_messages.
+          iv_message = |{ lx_provider->mv_error_code } { lx_provider->mv_detail }| ).
+        APPEND VALUE #( type = 'E' message = |{ lx_provider->mv_error_code } { lx_provider->mv_detail }| ) TO ct_messages.
         RETURN.
     ENDTRY.
 

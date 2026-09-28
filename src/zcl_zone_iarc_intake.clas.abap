@@ -128,7 +128,7 @@ CLASS zcl_zone_iarc_intake IMPLEMENTATION.
     TRY.
         DATA(ls_header) = NEW zcl_zone_iarc_parser( )->parse( iv_xml ).
       CATCH zcx_zone_iarc_mapping INTO DATA(lx_mapping).
-        fail( EXPORTING iv_step = 'PARSE' iv_message = lx_mapping->get_text( ) CHANGING cs_result = rs_result ).
+        fail( EXPORTING iv_step = 'PARSE' iv_message = |{ lx_mapping->mv_error_code } { lx_mapping->mv_detail }| CHANGING cs_result = rs_result ).
         RETURN.
     ENDTRY.
     rs_result-ettn = ls_header-uuid.
@@ -172,7 +172,7 @@ CLASS zcl_zone_iarc_intake IMPLEMENTATION.
           iv_lifnr  = rs_result-lifnr
           is_header = ls_header ).
       CATCH zcx_zone_iarc_mapping INTO lx_mapping.
-        fail( EXPORTING iv_step = 'MAP' iv_message = lx_mapping->get_text( ) CHANGING cs_result = rs_result ).
+        fail( EXPORTING iv_step = 'MAP' iv_message = |{ lx_mapping->mv_error_code } { lx_mapping->mv_detail }| CHANGING cs_result = rs_result ).
         RETURN.
     ENDTRY.
 
