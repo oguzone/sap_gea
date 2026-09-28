@@ -777,3 +777,30 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_post.clas.abap (yeniden),
   src/zcl_zone_iarc_review.clas.abap, src/zcl_zone_iarc_grid.clas.abap,
   src/zone_iarc_t005/t006.tabl.xml, src/zone_iarc_t017.tabl.xml (yeni)
 ```
+
+### Karar 029
+
+```text
+KONU: Uyarlama tablolari icin SM30 bakim ekranlari
+KARAR: ZONE_IARC_T001..T005 ve T017 icin tablo bakim (TMG) nesneleri
+  repoda uretildi: her tablo icin ayni adli fonksiyon grubu (TABLEFRAME_/
+  TABLEPROC_ fonksiyonlari, LSVIM* include'lari, 0001 genel bakis ekrani)
+  + bakim nesnesi (TOBJ, TVDIR tek asamali, yetki grubu &NC&).
+  Uretim elle yazilmadi: mdpgroup_invoice_de'deki SAP'den disa aktarilmis
+  /MDPES/INVDET001 TMG'si sablon alinip tools/gen_tmg.py ile isimler
+  cevrildi ve ekran sutunlari hedef tablonun alanlarindan kuruldu.
+  Ek duzeltmeler: (1) alti tabloya MAINFLAG=X (bakima izin ver) - yoktu,
+  bu yuzden SE16N'de de duzenleme engelleniyordu; (2) T003-ENDPOINT_URL
+  STRING -> CHAR 255 + kucuk harf (dynpro/TMG STRING alani gosteremez;
+  URL buyuk/kucuk harfe duyarli); (3) T002-PROVIDER_NAME, T001-
+  ACC_USER_CODE kucuk harf. Karar 017'deki "SM30 elle uretilir" notu
+  gecersiz.
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın ("uyarlama tablolarinin SM30'u neden [yok]")
+DOGRULANMAMIS: uretilmis ekran ozniteliklerinin (baslik MODIFIC kodu,
+  gorunur uzunluk) sistemde birebir kabulu; sorun olursa SE54'ten
+  "yeniden uret" ile SAP'nin kendisi duzeltir.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_t00[1-5].fugr.*, src/zone_iarc_t017.fugr.*,
+  src/zone_iarc_t00[1-5]s.tobj.xml, src/zone_iarc_t017s.tobj.xml,
+  src/zone_iarc_t001/t002/t003/t004/t005/t017.tabl.xml, tools/gen_tmg.py
+```
