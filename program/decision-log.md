@@ -645,3 +645,31 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap,
   src/zone_iarc_incoming.prog.abap, src/zone_iarc_incoming_top.prog.abap,
   src/zone_iarc_incoming_cls.prog.abap
 ```
+
+### Karar 024
+
+```text
+KONU: ZONE_IARC_INCOMING - DEFAULT_SCREEN ile de ALV gorunmedi (liste
+  ekrani bos acildi)
+KARAR: Kontroller artik GERCEK bir dynpro'ya yerlesiyor: ZONE_IARC_
+  INCOMING ekran 0100 (tek CUST_CTRL alani CC_MAIN, yeniden
+  boyutlanabilir) + GUI status STATUS_0100 (BACK F3 / CANCEL F12 / EXIT
+  F15) + titlebar TITLE_0100. Akis: F8 -> LCL_APP->EXECUTE ->
+  ZCL_ZONE_IARC_GRID->LOAD (kayit yoksa uyari, secim ekrani kalir) ->
+  CALL SCREEN 0100 -> PBO: GRID->SHOW( sy-repid, sy-dynnr ) ->
+  CL_GUI_CUSTOM_CONTAINER 'CC_MAIN' + splitter (ust liste/alt detay) ->
+  BACK/CANCEL/EXIT: GRID->FREE + LEAVE TO SCREEN 0. Yeni include
+  ZONE_IARC_INCOMING_MOD (MODULE'ler LCL_APP'e delege).
+  abapGit formati: DYNPROS/CUA, workspace/zeinvoice zeinv_fg004 (SAP'den
+  disa aktarilmis gercek ornek) birebir sablon alindi. Flow logic hem
+  XML (<FLOW_LOGIC>, eski abapGit) hem .prog.screen_0100.abap (yeni
+  abapGit) olarak verildi.
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın (ekran goruntusu: liste ekrani bos)
+GEREKÇE: Viewer'daki tam ekran REUSE ALV bu sistemde calisiyor ve
+  icerde ayni yapiyi (dynpro + custom container) kullaniyor; en az
+  varsayim iceren yol.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap,
+  src/zone_iarc_incoming.prog.abap/.xml/.screen_0100.abap,
+  src/zone_iarc_incoming_cls.prog.abap, src/zone_iarc_incoming_mod.prog.*
+```

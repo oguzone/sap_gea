@@ -9,11 +9,13 @@ CLASS zcl_zone_iarc_grid DEFINITION
     " detayi (Kalemler/Vergi/Dip Toplam/Notlar arasinda arac cubugu
     " butonlariyla gecis - "tab" gibi davranir).
     "
-    " Ozel dynpro YOK - kontroller CL_GUI_CONTAINER=>DEFAULT_SCREEN'e
-    " (liste ekraninin tamami) yerlestirilir; cagiran rapor START-OF-
-    " SELECTION'da RUN'i cagirip ardindan bir liste satiri yazarak (WRITE)
-    " liste ekranini acar. Secim ekranina docking baglama teknigi bu
-    " sistemde ALV gostermedi (Karar 023, Karar 015/022'nin yerine).
+    " Kontroller cagiran raporun dynpro'sundaki CUSTOM CONTAINER alanina
+    " (ZONE_IARC_INCOMING 0100 / CC_MAIN) yerlestirilir. Secim ekranina
+    " docking ve DEFAULT_SCREEN teknikleri bu sistemde ALV gostermedi
+    " (Karar 024 - Karar 015/022/023'un yerine).
+    "
+    " Kullanim: LOAD( filtre ) -> kayit varsa rapor CALL SCREEN yapar;
+    " dynpro PBO'sunda SHOW( repid dynnr ), cikista FREE( ).
     "
     " CL_GUI_TAB_STRIP (gercek native tab kontrolu) kullanilmadi - bu
     " kod tabaninda hic dogrulanmis bir ornegi yok, ekstra risk olurdu.
@@ -83,17 +85,30 @@ CLASS zcl_zone_iarc_grid DEFINITION
       END OF ty_kv.
     TYPES tt_kv TYPE STANDARD TABLE OF ty_kv WITH DEFAULT KEY.
 
-    " Veriyi okur; kayit varsa grid'leri kurar ve ABAP_TRUE doner - cagiran
-    " rapor bu durumda liste ekranini acmalidir (WRITE). Kayit yoksa
-    " durum cubugunda uyari verir, ABAP_FALSE doner (secim ekrani kalir).
-    METHODS run
+    CONSTANTS c_container_name TYPE c LENGTH 7 VALUE 'CC_MAIN'.
+
+    " Veriyi okur. Kayit yoksa durum cubugunda uyari verir ve ABAP_FALSE
+    " doner (rapor secim ekraninda kalir).
+    METHODS load
       IMPORTING
-        !is_filter          TYPE ty_filter
+        !is_filter      TYPE ty_filter
       RETURNING
-        VALUE(rv_displayed) TYPE abap_bool.
+        VALUE(rv_found) TYPE abap_bool.
+
+    " Dynpro PBO'sundan cagrilir; kontroller yalnizca ilk seferde kurulur.
+    " IV_REPID/IV_DYNNR rapor baglaminda okunup verilmeli (bu sinifin
+    " icinde SY-REPID sinif havuzunu gosterir).
+    METHODS show
+      IMPORTING
+        !iv_repid TYPE sy-repid
+        !iv_dynnr TYPE sy-dynnr.
+
+    " Dynpro'dan cikarken tum kontrolleri serbest birakir.
+    METHODS free.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
+    DATA mo_container   TYPE REF TO cl_gui_custom_container.
     DATA mo_splitter    TYPE REF TO cl_gui_splitter_container.
     DATA mo_top_grid    TYPE REF TO cl_gui_alv_grid.
     DATA mo_bottom_grid TYPE REF TO cl_gui_alv_grid.
@@ -117,7 +132,10 @@ CLASS zcl_zone_iarc_grid DEFINITION
     METHODS refresh_top_grid.
     METHODS master_title
       RETURNING VALUE(rv_title) TYPE lvc_title.
-    METHODS build_screen.
+    METHODS build_screen
+      IMPORTING
+        !iv_repid TYPE sy-repid
+        !iv_dynnr TYPE sy-dynnr.
     METHODS build_top_grid.
     METHODS show_detail.
     METHODS rebuild_bottom_grid.
@@ -162,7 +180,7 @@ ENDCLASS.
 
 CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
-  METHOD run.
+  METHOD load.
     ms_filter = is_filter.
     refresh_master( ).
 
@@ -170,10 +188,24 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       MESSAGE 'Secim kriterlerine uygun belge yok (ZONE_IARC_T006)' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
       RETURN.
     ENDIF.
+    rv_found = abap_true.
+  ENDMETHOD.
 
-    build_screen( ).
+  METHOD show.
+    IF mo_container IS BOUND.
+      RETURN.
+    ENDIF.
+    build_screen( iv_repid = iv_repid iv_dynnr = iv_dynnr ).
     build_top_grid( ).
-    rv_displayed = abap_true.
+  ENDMETHOD.
+
+  METHOD free.
+    " Konteyneri serbest birakmak alt kontrolleri (splitter, grid'ler)
+    " de serbest birakir.
+    IF mo_container IS BOUND.
+      mo_container->free( ).
+    ENDIF.
+    CLEAR: mo_container, mo_splitter, mo_top_grid, mo_bottom_grid.
   ENDMETHOD.
 
   METHOD refresh_top_grid.
@@ -218,9 +250,13 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD build_screen.
-    " Liste ekraninin tamami (ozel dynpro/docking gerekmez).
+    mo_container = NEW cl_gui_custom_container(
+      container_name = c_container_name
+      repid          = iv_repid
+      dynnr          = iv_dynnr ).
+
     mo_splitter = NEW cl_gui_splitter_container(
-      parent  = cl_gui_container=>default_screen
+      parent  = mo_container
       rows    = 2
       columns = 1 ).
     mo_splitter->set_row_height( id = 1 height = 55 ).
