@@ -167,6 +167,19 @@ CLASS zcl_zone_iarc_grid DEFINITION
     METHODS handle_top_double_click
       FOR EVENT double_click OF cl_gui_alv_grid
       IMPORTING e_row.
+    " Fatura no sutunlarinda tek tik (hotspot) = detay
+    METHODS handle_top_hotspot
+      FOR EVENT hotspot_click OF cl_gui_alv_grid
+      IMPORTING e_row_id.
+
+    " Ust gridde secili satir; secim yoksa imlecin bulundugu satir;
+    " liste tek satirsa o satir. Bulunamazsa bos yapi doner.
+    METHODS current_master
+      RETURNING VALUE(rs_master) TYPE ty_master.
+    " Belgenin detayini alt gride getirir.
+    METHODS open_detail
+      IMPORTING
+        !is_master TYPE ty_master.
 
     METHODS handle_bottom_toolbar
       FOR EVENT toolbar OF cl_gui_alv_grid
@@ -197,6 +210,9 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     ENDIF.
     build_screen( iv_repid = iv_repid iv_dynnr = iv_dynnr ).
     build_top_grid( ).
+    " Alt grid bastan (bos) kurulur - Kalemler/Vergi/Dip Toplam/Notlar
+    " butonlari gorunur olsun, detayin nereye gelecegi belli olsun.
+    rebuild_bottom_grid( ).
   ENDMETHOD.
 
   METHOD free.
@@ -268,6 +284,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     SET HANDLER handle_top_toolbar      FOR mo_top_grid.
     SET HANDLER handle_top_user_command FOR mo_top_grid.
     SET HANDLER handle_top_double_click FOR mo_top_grid.
+    SET HANDLER handle_top_hotspot      FOR mo_top_grid.
 
     DATA(ls_layout) = VALUE lvc_s_layo(
       zebra      = abap_true
@@ -288,8 +305,10 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
   METHOD build_master_fcat.
     " REF_TABLE/REF_FIELD -> tip/uzunluk DDIC'ten gelir; COLTEXT -> baslik.
     rt_fcat = VALUE #(
-      ( fieldname = 'PROVIDER_DOC_ID' ref_table = 'ZONE_IARC_T006' ref_field = 'PROVIDER_DOC_ID' coltext = 'Fatura No (Bayt)' )
-      ( fieldname = 'INVOICE_ID'      ref_table = 'ZONE_IARC_T009' ref_field = 'INVOICE_ID'      coltext = 'UBL Fatura No' )
+      ( fieldname = 'PROVIDER_DOC_ID' ref_table = 'ZONE_IARC_T006' ref_field = 'PROVIDER_DOC_ID' coltext = 'Fatura No (Bayt)'
+        hotspot = abap_true )
+      ( fieldname = 'INVOICE_ID'      ref_table = 'ZONE_IARC_T009' ref_field = 'INVOICE_ID'      coltext = 'UBL Fatura No'
+        hotspot = abap_true )
       ( fieldname = 'ETTN'            ref_table = 'ZONE_IARC_T006' ref_field = 'ETTN'            coltext = 'ETTN' )
       ( fieldname = 'BUKRS'           ref_table = 'ZONE_IARC_T006' ref_field = 'BUKRS'           coltext = 'Sirket Kodu' )
       ( fieldname = 'STATUS'          ref_table = 'ZONE_IARC_T006' ref_field = 'STATUS'          coltext = 'Durum' )
@@ -320,6 +339,13 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
                              quickinfo = 'Listeyi yenile' ) TO e_object->mt_toolbar ##NO_TEXT.
     APPEND VALUE stb_button( function = 'DELE' icon = '@11@' text = 'Sil'
                              quickinfo = 'Secili belgeleri tum UBL verisiyle sil' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
+    APPEND VALUE stb_button( function = 'DETL' text = 'Detay'
+                             quickinfo = 'Secili belgenin detayini alt gride getir' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'XML' text = 'XML Goster'
+                             quickinfo = 'Ham UBL XML' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'HTML' text = 'HTML Goster'
+                             quickinfo = 'Okunabilir fatura gorunumu' ) TO e_object->mt_toolbar ##NO_TEXT.
   ENDMETHOD.
 
   METHOD handle_top_user_command.
@@ -329,7 +355,58 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
         refresh_top_grid( ).
       WHEN 'DELE'.
         delete_selected( ).
+      WHEN 'DETL' OR 'XML' OR 'HTML'.
+        DATA(ls_master) = current_master( ).
+        IF ls_master IS INITIAL.
+          MESSAGE 'Once listeden bir satir secin' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
+          RETURN.
+        ENDIF.
+        CASE e_ucomm.
+          WHEN 'DETL'.
+            open_detail( ls_master ).
+          WHEN 'XML'.
+            zcl_zone_iarc_doc_view=>show_xml( ls_master-provider_doc_id ).
+          WHEN 'HTML'.
+            zcl_zone_iarc_doc_view=>show_html( ls_master-provider_doc_id ).
+        ENDCASE.
     ENDCASE.
+  ENDMETHOD.
+
+  METHOD current_master.
+    DATA lt_rows  TYPE lvc_t_row.
+    DATA lv_index TYPE i.
+
+    mo_top_grid->get_selected_rows( IMPORTING et_index_rows = lt_rows ).
+    DELETE lt_rows WHERE rowtype IS NOT INITIAL.
+    IF lt_rows IS NOT INITIAL.
+      lv_index = lt_rows[ 1 ]-index.
+    ELSE.
+      mo_top_grid->get_current_cell( IMPORTING e_row = lv_index ).
+    ENDIF.
+    IF lv_index <= 0 AND lines( mt_master ) = 1.
+      lv_index = 1.
+    ENDIF.
+
+    IF lv_index > 0.
+      READ TABLE mt_master INDEX lv_index INTO rs_master.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD open_detail.
+    IF is_master-ettn IS INITIAL.
+      MESSAGE 'Bu belge henuz parse edilmemis (UBL basligi yok)' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
+      RETURN.
+    ENDIF.
+    mv_sel_bukrs = is_master-bukrs.
+    mv_sel_ettn  = is_master-ettn.
+    show_detail( ).
+  ENDMETHOD.
+
+  METHOD handle_top_hotspot.
+    READ TABLE mt_master INDEX e_row_id-index INTO DATA(ls_master).
+    IF sy-subrc = 0.
+      open_detail( ls_master ).
+    ENDIF.
   ENDMETHOD.
 
   METHOD delete_selected.
@@ -406,13 +483,9 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
   METHOD handle_top_double_click.
     READ TABLE mt_master INDEX e_row-index INTO DATA(ls_master).
-    IF sy-subrc <> 0 OR ls_master-ettn IS INITIAL.
-      MESSAGE 'Bu belge henuz parse edilmemis (UBL basligi yok)' TYPE 'S' DISPLAY LIKE 'W'.
-      RETURN.
+    IF sy-subrc = 0.
+      open_detail( ls_master ).
     ENDIF.
-    mv_sel_bukrs = ls_master-bukrs.
-    mv_sel_ettn  = ls_master-ettn.
-    show_detail( ).
   ENDMETHOD.
 
   METHOD show_detail.

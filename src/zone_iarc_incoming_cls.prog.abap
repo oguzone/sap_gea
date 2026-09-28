@@ -52,6 +52,10 @@ CLASS lcl_app IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD on_pai.
+    " Grid olaylari (cift tik, hotspot, arac cubugu) uygulama olayi olarak
+    " gelirse isleyicileri burada tetiklenir.
+    cl_gui_cfw=>dispatch( ).
+
     CASE iv_ucomm.
       WHEN c_fcode-back OR c_fcode-cancel OR c_fcode-exit.
         mo_grid->free( ).

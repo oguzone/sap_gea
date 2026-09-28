@@ -57,6 +57,13 @@ CLASS zcl_zone_iarc_parser DEFINITION
 
     " Gonderici/alicida birden fazla PartyIdentification olabilir (VKN,
     " MERSISNO, TICARETSICILNO...) - schemeID VKN/TCKN olani secilir.
+    " Unvan: kurumsal PartyName; yoksa (sahis - TCKN) Person Ad + Soyad.
+    METHODS display_name
+      IMPORTING
+        !is_party      TYPE zif_zone_iarc_types=>ty_party
+      RETURNING
+        VALUE(rv_name) TYPE string.
+
     METHODS find_tax_id
       IMPORTING
         !io_party    TYPE REF TO if_ixml_element
@@ -184,7 +191,7 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
     IF lo_supplier_wrap IS BOUND.
       rs_header-supplier_party = parse_party( lo_supplier_wrap ).
       rs_header-supplier_vkn   = rs_header-supplier_party-vkn_tckn.
-      rs_header-supplier_name  = rs_header-supplier_party-party_name.
+      rs_header-supplier_name  = display_name( rs_header-supplier_party ).
     ENDIF.
 
     " --- Alici (cac:AccountingCustomerParty/cac:Party/...) - gelen belge
@@ -194,7 +201,7 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
     IF lo_customer_wrap IS BOUND.
       rs_header-customer_party = parse_party( lo_customer_wrap ).
       rs_header-customer_vkn   = rs_header-customer_party-vkn_tckn.
-      rs_header-customer_name  = rs_header-customer_party-party_name.
+      rs_header-customer_name  = display_name( rs_header-customer_party ).
     ENDIF.
 
     " --- Tutar toplamlari (cac:LegalMonetaryTotal - tekil blok).
@@ -399,6 +406,13 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
     DATA(lo_inner) = get_child_element( io_scope = io_root iv_tag_name = 'Invoice' iv_depth = 0 ).
     IF lo_inner IS BOUND.
       ro_invoice = lo_inner.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD display_name.
+    rv_name = is_party-party_name.
+    IF rv_name IS INITIAL.
+      rv_name = condense( |{ is_party-first_name } { is_party-family_name }| ).
     ENDIF.
   ENDMETHOD.
 

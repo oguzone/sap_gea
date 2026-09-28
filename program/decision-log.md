@@ -673,3 +673,25 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap,
   src/zone_iarc_incoming.prog.abap/.xml/.screen_0100.abap,
   src/zone_iarc_incoming_cls.prog.abap, src/zone_iarc_incoming_mod.prog.*
 ```
+
+### Karar 025
+
+```text
+KONU: ZONE_IARC_INCOMING - alt detay gelmiyor, XML/HTML goruntuleme
+  isteniyor; ekranda satici adi bos
+KARAR: (1) Ust grid arac cubuguna "Detay", "XML Goster", "HTML Goster"
+  eklendi; fatura no sutunlari hotspot (tek tik = detay); alt grid
+  ekran acilisinda bos haliyle kurulur (mod butonlari gorunur); PAI'de
+  CL_GUI_CFW=>DISPATCH acik cagrilir (olaylar uygulama olayi gelirse).
+  Satir secimi yoksa imlecin bulundugu satir, liste tek satirsa o satir
+  kullanilir. (2) XML/HTML popup mantigi ZONE_IARC_VIEWER FORM'larindan
+  yeni ZCL_ZONE_IARC_DOC_VIEW sinifina tasindi; viewer ve grid ortak
+  kullanir. (3) Parser: PartyName yoksa (sahis/TCKN) SUPPLIER_NAME/
+  CUSTOMER_NAME = Person Ad + Soyad (T015/T016 ham alanlari degismez).
+  Mevcut kayitlar icin belgeyi Sil + tekrar yukle gerekir.
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın (ekran goruntusu + "XML/HTML goruntule")
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap,
+  src/zcl_zone_iarc_doc_view.clas.* (yeni), src/zone_iarc_viewer.prog.abap,
+  src/zone_iarc_incoming_cls.prog.abap, src/zcl_zone_iarc_parser.clas.*
+```

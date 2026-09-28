@@ -19,6 +19,7 @@ CLASS ltc_parser DEFINITION FINAL FOR TESTING
     METHODS missing_mandatory_raises FOR TESTING RAISING cx_static_check.
     METHODS gib_namespace_mersis_first FOR TESTING RAISING cx_static_check.
     METHODS invoice_in_envelope FOR TESTING RAISING cx_static_check.
+    METHODS person_name_fallback FOR TESTING RAISING cx_static_check.
 ENDCLASS.
 
 
@@ -244,5 +245,21 @@ CLASS ltc_parser IMPLEMENTATION.
     cl_abap_unit_assert=>assert_equals( act = ls_header-supplier_vkn exp = '1111111111' ).
   ENDMETHOD.
 
-ENDCLASS.
+  METHOD person_name_fallback.
+    " Sahis satici (TCKN): PartyName yok, ad Person altinda.
+    DATA(lv_xml) = cl_abap_codepage=>convert_to(
+      |<Invoice xmlns:cbc="urn:cbc" xmlns:cac="urn:cac">| &&
+      |<cbc:ID>PRS-0001</cbc:ID>| &&
+      |<cbc:UUID>PRS-UUID-0001</cbc:UUID>| &&
+      |<cac:AccountingSupplierParty><cac:Party>| &&
+      |<cac:PartyIdentification><cbc:ID schemeID="TCKN">51148772892</cbc:ID></cac:PartyIdentification>| &&
+      |<cac:Person><cbc:FirstName>Ayse</cbc:FirstName><cbc:FamilyName>Demir</cbc:FamilyName></cac:Person>| &&
+      |</cac:Party></cac:AccountingSupplierParty>| &&
+      |</Invoice>| ).
 
+    DATA(ls_header) = mo_cut->parse( lv_xml ).
+
+    cl_abap_unit_assert=>assert_equals( act = ls_header-supplier_name exp = 'Ayse Demir' ).
+  ENDMETHOD.
+
+ENDCLASS.
