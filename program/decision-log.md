@@ -552,3 +552,26 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_upload*.prog.* (yeni),
   src/zcl_zone_iarc_parser.clas.abap, test-data/ornek-earsiv-ubl.xml (yeni),
   src/README.md
 ```
+
+### Karar 020
+
+```text
+KONU: Manuel aktarimda "IARC_PARSE_003 Zorunlu UBL alani eksik" hatasi
+KARAR: Hata mesaji T100 degiskeni (50 kar.) nedeniyle kesiliyordu ve
+  hangi alanin eksik oldugu gorunmuyordu. (1) Parser artik eksik alanlari
+  tek tek ve kok element adini MV_DETAIL'de verir. (2) ZONE_IARC_UPLOAD
+  parse hatasinda tam metni + dosya yapisi teshisini (kok ad/onek/
+  namespace URI, kokun alt elementleri, ilk 400 byte, ZIP tespiti)
+  listeler. (3) Gercek dosya varyasyonlarina dayaniklilik: kok Invoice
+  degilse (entegrator zarfi) alt agactaki ilk Invoice kullanilir; birden
+  fazla PartyIdentification varsa (MERSISNO/TICARETSICILNO/VKN)
+  schemeID=VKN/TCKN olan secilir; GET_NAME onekli donse bile onek atilir.
+  2 yeni ABAP Unit testi (GIB namespace + MERSIS once, zarf icinde fatura).
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın (hata bildirimi)
+GEREKÇE: Kok neden dosya gorulmeden kesinlesemiyor - teshis ciktisi
+  bir sonraki denemede gercek yapiyi gosterecek.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_parser.clas.abap,
+  src/zcl_zone_iarc_parser.clas.testclasses.abap,
+  src/zone_iarc_upload_cls.prog.abap
+```

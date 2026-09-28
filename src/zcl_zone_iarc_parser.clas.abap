@@ -38,6 +38,32 @@ CLASS zcl_zone_iarc_parser DEFINITION
       CHANGING
         !ct_elements   TYPE ty_elements.
 
+    " Elementin oneksiz adi. GET_NAME genelde zaten yerel adi verir;
+    " 'cbc:UUID' seklinde dondugu durumlara karsi onek yine de atilir.
+    METHODS local_name
+      IMPORTING
+        !io_element    TYPE REF TO if_ixml_element
+      RETURNING
+        VALUE(rv_name) TYPE string.
+
+    " Asil fatura elementini bulur: kok dogrudan Invoice ise kokun
+    " kendisi; entegrator bir zarf (envelope) icine koymussa alt agactaki
+    " ilk Invoice elementi.
+    METHODS find_invoice_root
+      IMPORTING
+        !io_root          TYPE REF TO if_ixml_element
+      RETURNING
+        VALUE(ro_invoice) TYPE REF TO if_ixml_element.
+
+    " Gonderici/alicida birden fazla PartyIdentification olabilir (VKN,
+    " MERSISNO, TICARETSICILNO...) - schemeID VKN/TCKN olani secilir.
+    METHODS find_tax_id
+      IMPORTING
+        !io_party    TYPE REF TO if_ixml_element
+      EXPORTING
+        !ev_value    TYPE string
+        !ev_scheme   TYPE string.
+
     METHODS get_child_text
       IMPORTING
         !io_scope    TYPE REF TO if_ixml_element
@@ -118,13 +144,14 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
           iv_detail     = 'UBL XML parse edilemedi (gecersiz XML)'.
     ENDIF.
 
-    DATA(lo_root) = lo_document->get_root_element( ).
-    IF lo_root IS NOT BOUND.
+    DATA(lo_doc_root) = lo_document->get_root_element( ).
+    IF lo_doc_root IS NOT BOUND.
       RAISE EXCEPTION TYPE zcx_zone_iarc_mapping
         EXPORTING
           iv_error_code = 'IARC_PARSE_002'
           iv_detail     = 'UBL XML kok elementi bulunamadi'.
     ENDIF.
+    DATA(lo_root) = find_invoice_root( lo_doc_root ).
 
     " --- Header ana alanlari: root'un dogrudan cocuklari (depth=1) -
     "     InvoiceLine icindeki ayni isimli alanlarla (ornegin cbc:ID)
@@ -204,11 +231,25 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
       APPEND parse_line( io_line = lo_line iv_line_no = lv_line_no ) TO rs_header-line.
     ENDLOOP.
 
-    IF rs_header-uuid IS INITIAL OR rs_header-invoice_id IS INITIAL OR rs_header-supplier_vkn IS INITIAL.
+    " Hangi alanin eksik oldugu ve kok element adi mesajda yer alir -
+    " teshis icin (T100 degiskeni 50 karakterle sinirli; tam metin
+    " MV_DETAIL'de).
+    DATA lt_missing TYPE string_table.
+    IF rs_header-uuid IS INITIAL.
+      APPEND 'UUID' TO lt_missing.
+    ENDIF.
+    IF rs_header-invoice_id IS INITIAL.
+      APPEND 'ID' TO lt_missing.
+    ENDIF.
+    IF rs_header-supplier_vkn IS INITIAL.
+      APPEND COND string( WHEN lo_supplier_wrap IS BOUND THEN 'Satici VKN'
+                          ELSE 'AccountingSupplierParty' ) TO lt_missing ##NO_TEXT.
+    ENDIF.
+    IF lt_missing IS NOT INITIAL.
       RAISE EXCEPTION TYPE zcx_zone_iarc_mapping
         EXPORTING
           iv_error_code = 'IARC_PARSE_003'
-          iv_detail     = 'Zorunlu UBL alani eksik (UUID/ID/AccountingSupplierParty VKN)'.
+          iv_detail     = |Eksik: { concat_lines_of( table = lt_missing sep = ', ' ) } (kok: { local_name( lo_root ) })| ##NO_TEXT.
     ENDIF.
   ENDMETHOD.
 
@@ -281,14 +322,9 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lo_id_wrap) = get_child_element( io_scope = lo_party iv_tag_name = 'cac:PartyIdentification' iv_depth = 1 ).
-    IF lo_id_wrap IS BOUND.
-      DATA(lo_id_el) = get_child_element( io_scope = lo_id_wrap iv_tag_name = 'cbc:ID' ).
-      IF lo_id_el IS BOUND.
-        rs_party-vkn_tckn  = lo_id_el->get_value( ).
-        rs_party-scheme_id = lo_id_el->get_attribute( name = 'schemeID' ).
-      ENDIF.
-    ENDIF.
+    find_tax_id( EXPORTING io_party  = lo_party
+                 IMPORTING ev_value  = rs_party-vkn_tckn
+                           ev_scheme = rs_party-scheme_id ).
 
     DATA(lo_name_wrap) = get_child_element( io_scope = lo_party iv_tag_name = 'cac:PartyName' iv_depth = 1 ).
     IF lo_name_wrap IS BOUND.
@@ -346,13 +382,53 @@ CLASS zcl_zone_iarc_parser IMPLEMENTATION.
         ct_elements   = rt_elements ).
   ENDMETHOD.
 
+  METHOD local_name.
+    rv_name = io_element->get_name( ).
+    FIND FIRST OCCURRENCE OF ':' IN rv_name MATCH OFFSET DATA(lv_colon).
+    IF sy-subrc = 0.
+      rv_name = substring( val = rv_name off = lv_colon + 1 ).
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD find_invoice_root.
+    ro_invoice = io_root.
+    IF local_name( io_root ) = 'Invoice'
+       OR get_child_element( io_scope = io_root iv_tag_name = 'cbc:UUID' ) IS BOUND.
+      RETURN.
+    ENDIF.
+    DATA(lo_inner) = get_child_element( io_scope = io_root iv_tag_name = 'Invoice' iv_depth = 0 ).
+    IF lo_inner IS BOUND.
+      ro_invoice = lo_inner.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD find_tax_id.
+    CLEAR: ev_value, ev_scheme.
+    DATA(lt_id_wrap) = get_child_elements( io_scope = io_party iv_tag_name = 'cac:PartyIdentification' ).
+    LOOP AT lt_id_wrap INTO DATA(lo_id_wrap).
+      DATA(lo_id_el) = get_child_element( io_scope = lo_id_wrap iv_tag_name = 'cbc:ID' ).
+      IF lo_id_el IS NOT BOUND.
+        CONTINUE.
+      ENDIF.
+      DATA(lv_scheme) = to_upper( lo_id_el->get_attribute( name = 'schemeID' ) ).
+      IF ev_value IS INITIAL.   " yedek: ilk bulunan
+        ev_value  = lo_id_el->get_value( ).
+        ev_scheme = lv_scheme.
+      ENDIF.
+      IF lv_scheme = 'VKN' OR lv_scheme = 'TCKN'.
+        ev_value  = lo_id_el->get_value( ).
+        ev_scheme = lv_scheme.
+        RETURN.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
   METHOD collect_children.
     DATA(lo_child) = io_scope->get_first_child( ).
     WHILE lo_child IS BOUND.
       IF lo_child->get_type( ) = if_ixml_node=>co_node_element.
         DATA(lo_element) = CAST if_ixml_element( lo_child ).
-        " GET_NAME yerel adi (oneksiz) dondurur
-        IF lo_element->get_name( ) = iv_local_name.
+        IF local_name( lo_element ) = iv_local_name.
           APPEND lo_element TO ct_elements.
         ENDIF.
         IF iv_depth <> 1.

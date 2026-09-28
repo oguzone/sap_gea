@@ -17,6 +17,8 @@ CLASS ltc_parser DEFINITION FINAL FOR TESTING
     METHODS line_fields FOR TESTING RAISING cx_static_check.
     METHODS line_note_and_tax FOR TESTING RAISING cx_static_check.
     METHODS missing_mandatory_raises FOR TESTING RAISING cx_static_check.
+    METHODS gib_namespace_mersis_first FOR TESTING RAISING cx_static_check.
+    METHODS invoice_in_envelope FOR TESTING RAISING cx_static_check.
 ENDCLASS.
 
 
@@ -201,4 +203,46 @@ CLASS ltc_parser IMPLEMENTATION.
     ENDTRY.
   ENDMETHOD.
 
+  METHOD gib_namespace_mersis_first.
+    " Gercek GIB yapisi: varsayilan namespace'li Invoice koku, tam URI'li
+    " cbc/cac onekleri, saticida MERSISNO VKN'den ONCE geliyor.
+    DATA(lv_xml) = cl_abap_codepage=>convert_to(
+      |<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" | &&
+      |xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" | &&
+      |xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">| &&
+      |<cbc:ID>GIB2026000000001</cbc:ID>| &&
+      |<cbc:UUID>3F2B8C4E-9A1D-4E7B-8C21-5D6E7F809A1B</cbc:UUID>| &&
+      |<cac:AccountingSupplierParty><cac:Party>| &&
+      |<cac:PartyIdentification><cbc:ID schemeID="MERSISNO">0123456789000015</cbc:ID></cac:PartyIdentification>| &&
+      |<cac:PartyIdentification><cbc:ID schemeID="VKN">1234567890</cbc:ID></cac:PartyIdentification>| &&
+      |</cac:Party></cac:AccountingSupplierParty>| &&
+      |</Invoice>| ).
+
+    DATA(ls_header) = mo_cut->parse( lv_xml ).
+
+    cl_abap_unit_assert=>assert_equals( act = ls_header-invoice_id exp = 'GIB2026000000001' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_header-uuid       exp = '3F2B8C4E-9A1D-4E7B-8C21-5D6E7F809A1B' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_header-supplier_vkn exp = '1234567890' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_header-supplier_party-scheme_id exp = 'VKN' ).
+  ENDMETHOD.
+
+  METHOD invoice_in_envelope.
+    " Entegrator zarfi icinde gelen fatura - asil Invoice alt agactan bulunur.
+    DATA(lv_xml) = cl_abap_codepage=>convert_to(
+      |<Envelope><Body>| &&
+      |<Invoice xmlns:cbc="urn:cbc" xmlns:cac="urn:cac">| &&
+      |<cbc:ID>ENV-0001</cbc:ID>| &&
+      |<cbc:UUID>ENV-UUID-0001</cbc:UUID>| &&
+      |<cac:AccountingSupplierParty><cac:Party>| &&
+      |<cac:PartyIdentification><cbc:ID schemeID="VKN">1111111111</cbc:ID></cac:PartyIdentification>| &&
+      |</cac:Party></cac:AccountingSupplierParty>| &&
+      |</Invoice></Body></Envelope>| ).
+
+    DATA(ls_header) = mo_cut->parse( lv_xml ).
+
+    cl_abap_unit_assert=>assert_equals( act = ls_header-invoice_id   exp = 'ENV-0001' ).
+    cl_abap_unit_assert=>assert_equals( act = ls_header-supplier_vkn exp = '1111111111' ).
+  ENDMETHOD.
+
 ENDCLASS.
+

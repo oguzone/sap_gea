@@ -328,6 +328,10 @@ CLASS lcl_output DEFINITION FINAL.
 
     METHODS blocked_note.
 
+    METHODS parse_error
+      IMPORTING
+        !iv_text TYPE string.
+
     METHODS result
       IMPORTING
         !is_result TYPE zcl_zone_iarc_intake=>ty_result
@@ -444,6 +448,13 @@ CLASS lcl_output IMPLEMENTATION.
     FORMAT COLOR OFF.
   ENDMETHOD.
 
+  METHOD parse_error.
+    section( 'UBL parse edilemedi' ) ##NO_TEXT.
+    FORMAT COLOR COL_NEGATIVE.
+    WRITE: / icon_led_red AS ICON, iv_text.
+    FORMAT COLOR OFF.
+  ENDMETHOD.
+
   METHOD result.
     section( 'Aktarim Sonucu' ) ##NO_TEXT.
     pair( iv_label = 'Belge No' iv_value = CONV #( iv_docid ) ) ##NO_TEXT.
@@ -460,6 +471,135 @@ CLASS lcl_output IMPLEMENTATION.
 
     SKIP.
     WRITE: / 'Belge kaydedildi. ZONE_IARC_INCOMING raporundan goruntuleyebilirsiniz.' ##NO_TEXT.
+  ENDMETHOD.
+ENDCLASS.
+
+
+*----------------------------------------------------------------------*
+* LCL_XML_DIAG - parse hatasinda dosyanin gercek yapisini gosterir
+* (kok element, onek, namespace, kokun alt elementleri, ilk karakterler)
+* - beklenen UBL yapisindan nerede ayristigini gormek icin.
+*----------------------------------------------------------------------*
+CLASS lcl_xml_diag DEFINITION FINAL.
+  PUBLIC SECTION.
+    CLASS-METHODS write
+      IMPORTING
+        !iv_xml TYPE xstring.
+
+  PRIVATE SECTION.
+    CONSTANTS c_max_children TYPE i VALUE 40.
+    CONSTANTS c_head_bytes   TYPE i VALUE 400.
+    CONSTANTS c_chunk        TYPE i VALUE 100.
+
+    CLASS-METHODS write_head
+      IMPORTING
+        !iv_xml TYPE xstring.
+
+    CLASS-METHODS write_tree
+      IMPORTING
+        !iv_xml TYPE xstring.
+
+    CLASS-METHODS leaf_value
+      IMPORTING
+        !io_node        TYPE REF TO if_ixml_node
+      RETURNING
+        VALUE(rv_value) TYPE string.
+ENDCLASS.
+
+CLASS lcl_xml_diag IMPLEMENTATION.
+  METHOD write.
+    SKIP.
+    FORMAT COLOR COL_HEADING INTENSIFIED ON.
+    WRITE: / 'Dosya yapisi (teshis)' ##NO_TEXT.
+    FORMAT COLOR OFF INTENSIFIED OFF.
+    ULINE.
+    write_head( iv_xml ).
+    write_tree( iv_xml ).
+  ENDMETHOD.
+
+  METHOD write_head.
+    DATA lv_head  TYPE string.
+    DATA lv_chunk TYPE string.
+
+    DATA(lv_size) = xstrlen( iv_xml ).
+    WRITE: / 'Boyut (byte):', lv_size ##NO_TEXT.
+    IF lv_size >= 2 AND iv_xml(2) = '504B'.
+      WRITE: / 'Dosya bir ZIP arsivi (PK) - once acilip icindeki XML secilmeli.' ##NO_TEXT.
+      RETURN.
+    ENDIF.
+
+    DATA(lv_len) = nmin( val1 = lv_size val2 = c_head_bytes ).
+    TRY.
+        cl_abap_conv_in_ce=>create( input       = iv_xml(lv_len)
+                                    encoding    = 'UTF-8'
+                                    ignore_cerr = abap_true )->read( IMPORTING data = lv_head ).
+      CATCH cx_root.
+        lv_head = '(UTF-8 olarak cozulemedi)' ##NO_TEXT.
+    ENDTRY.
+    REPLACE ALL OCCURRENCES OF cl_abap_char_utilities=>cr_lf   IN lv_head WITH ` `.
+    REPLACE ALL OCCURRENCES OF cl_abap_char_utilities=>newline IN lv_head WITH ` `.
+
+    SKIP.
+    WRITE: / |Ilk { lv_len } byte:| ##NO_TEXT.
+    WHILE lv_head IS NOT INITIAL.
+      lv_chunk = substring( val = lv_head len = nmin( val1 = c_chunk val2 = strlen( lv_head ) ) ).
+      WRITE: / lv_chunk.
+      lv_head = substring( val = lv_head off = strlen( lv_chunk ) ).
+    ENDWHILE.
+  ENDMETHOD.
+
+  METHOD write_tree.
+    DATA(lo_ixml)       = cl_ixml=>create( ).
+    DATA(lo_stream_fac) = lo_ixml->create_stream_factory( ).
+    DATA(lo_document)   = lo_ixml->create_document( ).
+    DATA(lo_parser)     = lo_ixml->create_parser(
+                             stream_factory = lo_stream_fac
+                             istream        = lo_stream_fac->create_istream_xstring( string = iv_xml )
+                             document       = lo_document ).
+    SKIP.
+    IF lo_parser->parse( ) <> 0.
+      WRITE: / 'XML gecersiz - iXML parse edemedi.' ##NO_TEXT.
+      RETURN.
+    ENDIF.
+
+    DATA(lo_root) = lo_document->get_root_element( ).
+    IF lo_root IS NOT BOUND.
+      RETURN.
+    ENDIF.
+    DATA(lv_root_name)   = lo_root->get_name( ).
+    DATA(lv_root_prefix) = lo_root->get_namespace_prefix( ).
+    DATA(lv_root_uri)    = lo_root->get_namespace_uri( ).
+    WRITE: / 'Kok element  :', lv_root_name ##NO_TEXT.
+    WRITE: / 'Onek         :', lv_root_prefix ##NO_TEXT.
+    WRITE: / 'Namespace URI:', lv_root_uri ##NO_TEXT.
+
+    SKIP.
+    WRITE: / 'Kokun dogrudan alt elementleri (onek / ad / deger):' ##NO_TEXT.
+    DATA lv_count TYPE i.
+    DATA(lo_child) = lo_root->get_first_child( ).
+    WHILE lo_child IS BOUND AND lv_count < c_max_children.
+      IF lo_child->get_type( ) = if_ixml_node=>co_node_element.
+        lv_count = lv_count + 1.
+        DATA(lv_prefix) = lo_child->get_namespace_prefix( ).
+        DATA(lv_name)   = lo_child->get_name( ).
+        DATA(lv_value)  = leaf_value( lo_child ).
+        WRITE: / lv_count, lv_prefix, 20 lv_name, 55 lv_value.
+      ENDIF.
+      lo_child = lo_child->get_next( ).
+    ENDWHILE.
+  ENDMETHOD.
+
+  METHOD leaf_value.
+    " Yalnizca tek metin cocugu olan (yaprak) elementlerin degeri gosterilir.
+    DATA(lo_first) = io_node->get_first_child( ).
+    IF lo_first IS BOUND
+       AND lo_first->get_type( ) = if_ixml_node=>co_node_text
+       AND lo_first->get_next( ) IS NOT BOUND.
+      rv_value = lo_first->get_value( ).
+      IF strlen( rv_value ) > 60.
+        rv_value = |{ substring( val = rv_value len = 60 ) }...|.
+      ENDIF.
+    ENDIF.
   ENDMETHOD.
 ENDCLASS.
 
@@ -506,10 +646,18 @@ CLASS lcl_app IMPLEMENTATION.
     mo_output = NEW #( ).
 
     TRY.
-        DATA(lv_xml)    = read_file( ).
-        DATA(ls_header) = parse( lv_xml ).
+        DATA(lv_xml) = read_file( ).
       CATCH lcx_upload INTO DATA(lx_upload).
         MESSAGE lx_upload->get_text( ) TYPE 'S' DISPLAY LIKE 'E'.
+        RETURN.
+    ENDTRY.
+
+    TRY.
+        DATA(ls_header) = parse( lv_xml ).
+      CATCH lcx_upload INTO lx_upload.
+        " Durum cubugu mesaji kesilir - tam metin + dosya yapisi listede.
+        mo_output->parse_error( lx_upload->get_text( ) ).
+        lcl_xml_diag=>write( lv_xml ).
         RETURN.
     ENDTRY.
 
@@ -541,7 +689,7 @@ CLASS lcl_app IMPLEMENTATION.
         rs_header = NEW zcl_zone_iarc_parser( )->parse( iv_xml ).
       CATCH zcx_zone_iarc_mapping INTO DATA(lx_mapping).
         RAISE EXCEPTION TYPE lcx_upload
-          EXPORTING iv_text = |UBL parse edilemedi: { lx_mapping->get_text( ) }| ##NO_TEXT.
+          EXPORTING iv_text = |{ lx_mapping->mv_error_code } - { lx_mapping->mv_detail }|.
     ENDTRY.
   ENDMETHOD.
 
