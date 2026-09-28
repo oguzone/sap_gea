@@ -410,27 +410,27 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
   METHOD handle_top_toolbar.
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
-    APPEND VALUE stb_button( function = 'REFR' icon = '@42@' text = 'Yenile'
+    APPEND VALUE stb_button( function = 'REFR' icon = icon_refresh text = 'Yenile'
                              quickinfo = 'Listeyi yenile' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'DELE' icon = '@11@' text = 'Sil'
+    APPEND VALUE stb_button( function = 'DELE' icon = icon_delete text = 'Sil'
                              quickinfo = 'Secili belgeleri tum UBL verisiyle sil' ) TO e_object->mt_toolbar ##NO_TEXT.
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
-    APPEND VALUE stb_button( function = 'DETL' text = 'Detay'
+    APPEND VALUE stb_button( function = 'DETL' icon = icon_select_detail text = 'Detay'
                              quickinfo = 'Secili belgenin detayini alt gride getir' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'XML' text = 'XML Goster'
+    APPEND VALUE stb_button( function = 'XML' icon = icon_xml_doc text = 'XML Goster'
                              quickinfo = 'Ham UBL XML' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'HTML' text = 'HTML Goster'
+    APPEND VALUE stb_button( function = 'HTML' icon = icon_protocol text = 'HTML Goster'
                              quickinfo = 'Okunabilir fatura gorunumu' ) TO e_object->mt_toolbar ##NO_TEXT.
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
-    APPEND VALUE stb_button( function = 'REPR' text = 'Yeniden Isle'
+    APPEND VALUE stb_button( function = 'REPR' icon = icon_execute_object text = 'Yeniden Isle'
                              quickinfo = 'Tedarikci eslemesi/kural kontrolunu tekrarla' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'PARK' text = 'Park (BAPI)'
+    APPEND VALUE stb_button( function = 'PARK' icon = icon_incomplete text = 'Park (BAPI)'
                              quickinfo = 'BAPI ile MIRO park belgesi olustur' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'POST' text = 'Kesinlestir'
+    APPEND VALUE stb_button( function = 'POST' icon = icon_release text = 'Kesinlestir'
                              quickinfo = 'Park belgesini kaydet (BAPI)' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'FB01' text = 'FB01'
+    APPEND VALUE stb_button( function = 'FB01' icon = icon_change text = 'FB01'
                              quickinfo = 'FB01 ekranlarini doldurarak ac' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'SHOW' text = 'Muhasebe Belgesi'
+    APPEND VALUE stb_button( function = 'SHOW' icon = icon_display text = 'Muhasebe Belgesi'
                              quickinfo = 'Olusan belgeyi MIR4/FB03/FBV3 ile goster' ) TO e_object->mt_toolbar ##NO_TEXT.
   ENDMETHOD.
 
@@ -784,10 +784,10 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     " degildi, gereksiz risk olurdu. Aktif mod yerine grid basligindan
     " (grid_title) anlasilir (bkz. REBUILD_BOTTOM_GRID).
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
-    APPEND VALUE stb_button( function = 'LINE'  text = 'Kalemler' )      TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'TAX'   text = 'Vergi/KDV' )     TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'TOTAL' text = 'Dip Toplamlar' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'NOTE'  text = 'Notlar' )        TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'LINE'  icon = icon_protocol    text = 'Kalemler' )      TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'TAX'   icon = icon_sum         text = 'Vergi/KDV' )     TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'TOTAL' icon = icon_display     text = 'Dip Toplamlar' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'NOTE'  icon = icon_information text = 'Notlar' )        TO e_object->mt_toolbar ##NO_TEXT.
   ENDMETHOD.
 
   METHOD handle_bottom_user_command.
