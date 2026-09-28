@@ -526,8 +526,12 @@ CLASS lcl_xml_diag IMPLEMENTATION.
     ENDIF.
 
     DATA(lv_len) = nmin( val1 = lv_size val2 = c_head_bytes ).
+    " XSTRING'e offset/uzunluk parametre konumunda verilemez - once
+    " atama ile ayri degiskene alinir.
+    DATA lv_head_x TYPE xstring.
+    lv_head_x = iv_xml(lv_len).
     TRY.
-        cl_abap_conv_in_ce=>create( input       = iv_xml(lv_len)
+        cl_abap_conv_in_ce=>create( input       = lv_head_x
                                     encoding    = 'UTF-8'
                                     ignore_cerr = abap_true )->read( IMPORTING data = lv_head ).
       CATCH cx_root.
