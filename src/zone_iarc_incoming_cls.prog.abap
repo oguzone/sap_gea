@@ -40,7 +40,11 @@ CLASS lcl_app IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD on_selection_screen_output.
-    mo_grid->run( build_filter( ) ).
+    " SY-REPID/SY-DYNNR burada (rapor baglaminda) okunur - grid sinifinin
+    " icinde SY-REPID sinif havuzunu gosterir.
+    mo_grid->run( is_filter = build_filter( )
+                  iv_repid  = sy-repid
+                  iv_dynnr  = sy-dynnr ).
   ENDMETHOD.
 
   METHOD build_filter.

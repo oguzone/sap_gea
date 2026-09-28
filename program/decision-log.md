@@ -601,3 +601,22 @@ GEREKÇE: Manuel test dongusu (yukle -> kontrol et -> sil -> tekrar yukle).
 ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_purge.clas.* (yeni),
   src/zcl_zone_iarc_grid.clas.abap, src/README.md
 ```
+
+### Karar 022
+
+```text
+KONU: ZONE_IARC_INCOMING'de ALV hic gorunmuyor
+KARAR: CL_GUI_DOCKING_CONTAINER, ZCL_ZONE_IARC_GRID icinde
+  repid = sy-repid ile yaratiliyordu. Global sinif metodunda SY-REPID
+  rapor adini degil sinif havuzunu (ZCL_ZONE_IARC_GRID====...CP) verir;
+  konteyner var olmayan bir dynpro'ya baglanir, ekranda hicbir sey
+  cikmaz. RUN metoduna IV_REPID/IV_DYNNR eklendi; rapor (LCL_APP) kendi
+  SY-REPID/SY-DYNNR degerini gecer.
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın (hata bildirimi: "ALV gelmiyor")
+GEREKÇE: Konteyner sahibi ekran daima cagiran rapor olmali. Not: ayni
+  kalip egdp-abap/ZCL_EGDP_COCKPIT'te de sinif icinden sy-repid kullaniyor
+  - oradaki "calisiyor" dogrulamasi yeniden gozden gecirilmeli.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap,
+  src/zone_iarc_incoming_cls.prog.abap
+```

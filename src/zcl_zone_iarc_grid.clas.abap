@@ -83,9 +83,16 @@ CLASS zcl_zone_iarc_grid DEFINITION
       END OF ty_kv.
     TYPES tt_kv TYPE STANDARD TABLE OF ty_kv WITH DEFAULT KEY.
 
+    " IV_REPID/IV_DYNNR: grid'in baglanacagi secim ekrani. Cagiran rapor
+    " kendi SY-REPID/SY-DYNNR degerini vermeli - bu sinifin icinde
+    " SY-REPID rapor adini degil sinif havuzunun adini (ZCL_...==CP)
+    " tasir; docking o zaman var olmayan bir ekrana baglanir ve ALV
+    " hic gorunmez (Karar 022).
     METHODS run
       IMPORTING
-        !is_filter TYPE ty_filter.
+        !is_filter TYPE ty_filter
+        !iv_repid  TYPE sy-repid
+        !iv_dynnr  TYPE sy-dynnr.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
@@ -96,6 +103,8 @@ CLASS zcl_zone_iarc_grid DEFINITION
 
     DATA mt_master TYPE tt_master.
     DATA ms_filter TYPE ty_filter.
+    DATA mv_repid  TYPE sy-repid.
+    DATA mv_dynnr  TYPE sy-dynnr.
 
     DATA mv_sel_bukrs TYPE bukrs.
     DATA mv_sel_ettn  TYPE zone_iarc_t006-ettn.
@@ -160,6 +169,8 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
   METHOD run.
     ms_filter = is_filter.
+    mv_repid  = iv_repid.
+    mv_dynnr  = iv_dynnr.
     refresh_master( ).
 
     IF mo_cont IS NOT BOUND.
@@ -221,8 +232,8 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     " Docking'i AKTIF secim ekranina baglar - ayri dynpro gerekmez
     " (egdp-abap/ZCL_EGDP_COCKPIT'te dogrulanmis teknik).
     mo_cont = NEW cl_gui_docking_container(
-      repid = sy-repid
-      dynnr = sy-dynnr
+      repid = mv_repid
+      dynnr = mv_dynnr
       side  = cl_gui_docking_container=>dock_at_bottom
       ratio = 60 ).  " secim ekraninin ust kismi (14 kriter) gorunur kalsin
 
