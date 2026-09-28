@@ -13,22 +13,19 @@
 *----------------------------------------------------------------------*
 CLASS lcx_upload DEFINITION INHERITING FROM cx_static_check FINAL.
   PUBLIC SECTION.
+    " Metin READ-ONLY nitelikte tutulur (GET_TEXT bir IF_MESSAGE alias'i -
+    " redefine etmek surume gore sozdizimi hatasi verebiliyor).
+    DATA mv_text TYPE string READ-ONLY.
+
     METHODS constructor
       IMPORTING
         !iv_text TYPE string.
-    METHODS get_text REDEFINITION.
-  PRIVATE SECTION.
-    DATA mv_text TYPE string.
 ENDCLASS.
 
 CLASS lcx_upload IMPLEMENTATION.
   METHOD constructor.
     super->constructor( ).
     mv_text = iv_text.
-  ENDMETHOD.
-
-  METHOD get_text.
-    result = mv_text.
   ENDMETHOD.
 ENDCLASS.
 
@@ -540,7 +537,8 @@ CLASS lcl_xml_diag IMPLEMENTATION.
     REPLACE ALL OCCURRENCES OF cl_abap_char_utilities=>newline IN lv_head WITH ` `.
 
     SKIP.
-    WRITE: / |Ilk { lv_len } byte:| ##NO_TEXT.
+    lv_chunk = |Ilk { lv_len } byte:| ##NO_TEXT.
+    WRITE: / lv_chunk.
     WHILE lv_head IS NOT INITIAL.
       lv_chunk = substring( val = lv_head len = nmin( val1 = c_chunk val2 = strlen( lv_head ) ) ).
       WRITE: / lv_chunk.
@@ -634,7 +632,7 @@ CLASS lcl_app DEFINITION FINAL.
       RETURNING
         VALUE(rv_docid) TYPE zone_iarc_t006-provider_doc_id.
 
-    METHODS import
+    METHODS import_document
       IMPORTING
         !iv_xml    TYPE xstring
         !iv_docid  TYPE zone_iarc_t006-provider_doc_id
@@ -648,7 +646,7 @@ CLASS lcl_app IMPLEMENTATION.
     TRY.
         DATA(lv_xml) = read_file( ).
       CATCH lcx_upload INTO DATA(lx_upload).
-        MESSAGE lx_upload->get_text( ) TYPE 'S' DISPLAY LIKE 'E'.
+        MESSAGE lx_upload->mv_text TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
 
@@ -656,7 +654,7 @@ CLASS lcl_app IMPLEMENTATION.
         DATA(ls_header) = parse( lv_xml ).
       CATCH lcx_upload INTO lx_upload.
         " Durum cubugu mesaji kesilir - tam metin + dosya yapisi listede.
-        mo_output->parse_error( lx_upload->get_text( ) ).
+        mo_output->parse_error( lx_upload->mv_text ).
         lcl_xml_diag=>write( lv_xml ).
         RETURN.
     ENDTRY.
@@ -676,7 +674,7 @@ CLASS lcl_app IMPLEMENTATION.
     ELSEIF lv_has_error = abap_true.
       mo_output->blocked_note( ).
     ELSE.
-      import( iv_xml = lv_xml iv_docid = lv_docid is_header = ls_header ).
+      import_document( iv_xml = lv_xml iv_docid = lv_docid is_header = ls_header ).
     ENDIF.
   ENDMETHOD.
 
@@ -700,7 +698,7 @@ CLASS lcl_app IMPLEMENTATION.
                        ELSE is_header-invoice_id ).
   ENDMETHOD.
 
-  METHOD import.
+  METHOD import_document.
     DATA(ls_result) = NEW zcl_zone_iarc_intake( )->process(
       iv_bukrs           = p_bukrs
       iv_provider_doc_id = iv_docid
