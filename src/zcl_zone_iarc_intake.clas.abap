@@ -176,11 +176,15 @@ CLASS zcl_zone_iarc_intake IMPLEMENTATION.
     DATA ls_xml TYPE zone_iarc_t007.
     ls_xml-provider_doc_id = mv_docid.
     ls_xml-xml_raw         = iv_xml.
+    " EF_HASHSTRING STRING tipinde; tablo alani (CHAR) ile dogrudan
+    " eslestirilemez (IMPORTING tip uyumlulugu) - ara degisken kullanilir.
+    DATA lv_hash TYPE string.
     TRY.
         cl_abap_message_digest=>calculate_hash_for_raw(
           EXPORTING if_algorithm  = 'SHA256'
                     if_data       = iv_xml
-          IMPORTING ef_hashstring = ls_xml-checksum ).
+          IMPORTING ef_hashstring = lv_hash ).
+        ls_xml-checksum = lv_hash.
       CATCH cx_abap_message_digest.
         CLEAR ls_xml-checksum. " bilerek yutuluyor - butunluk dogrulama best-effort (TODO)
     ENDTRY.
