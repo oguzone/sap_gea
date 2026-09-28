@@ -575,3 +575,29 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_parser.clas.abap,
   src/zcl_zone_iarc_parser.clas.testclasses.abap,
   src/zone_iarc_upload_cls.prog.abap
 ```
+
+### Karar 021
+
+```text
+KONU: Aktarilan belgeyi silme (ozellikle manuel test yuklemelerinden sonra)
+KARAR: Yeni ZCL_ZONE_IARC_PURGE->DELETE( provider_doc_id ): T006, T007 ve
+  T009..T016 kayitlarini siler; T008 log satirlari denetim izi olarak
+  KALIR, ayrica 'DELETE' adimli bir log satiri eklenir. Guvenlik
+  kurallari: (1) FI/MIRO belge no dolu ya da durum PARKED/POSTED ise
+  silinmez; (2) T009..T016 yalnizca T009-PROVIDER_DOC_ID bu belge ise
+  silinir (ayni ETTN'li mukerrer ikinci belge silinirken ilk belgenin UBL
+  verisi korunur). ZONE_IARC_INCOMING ust grid arac cubuguna "Sil"
+  butonu eklendi: coklu satir secimi -> POPUP_TO_CONFIRM -> silme ->
+  COMMIT -> liste yenilenir, alt detay temizlenir.
+SEÇENEKLER: Yumusak silme (STATUS=DELETED) - reddedildi, test amaci icin
+  ayni belgenin tekrar yuklenebilmesi gerekiyor (mukerrer kontrolu T006/
+  T009 kaydina bakiyor) / fiziksel silme + log (secildi)
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın ("yukleme sonrasi silmek icin de bir yapi
+  ekleyebilir miyiz")
+GEREKÇE: Manuel test dongusu (yukle -> kontrol et -> sil -> tekrar yukle).
+  Yetki: Z_IARC yetki nesnesi henuz hicbir yerde kontrol edilmiyor -
+  canliya cikmadan once Sil butonu yetki kontrolune baglanmali (acik is).
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_purge.clas.* (yeni),
+  src/zcl_zone_iarc_grid.clas.abap, src/README.md
+```

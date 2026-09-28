@@ -112,6 +112,16 @@ CLASS zcl_zone_iarc_grid DEFINITION
     METHODS show_detail.
     METHODS rebuild_bottom_grid.
 
+    " Ust gridde secili belgeleri onay sonrasi ZCL_ZONE_IARC_PURGE ile
+    " siler (Karar 021).
+    METHODS delete_selected.
+    METHODS confirm_delete
+      IMPORTING
+        !iv_count          TYPE i
+      RETURNING
+        VALUE(rv_confirmed) TYPE abap_bool.
+    METHODS clear_detail.
+
     " Yerel tipli tablolar (ty_master, ty_kv) icin DDIC yapisi yok -
     " I_STRUCTURE_NAME verilemedigi icin alan katalogu elle kurulur,
     " yoksa CL_GUI_ALV_GRID "alan katalogu bulunamadi" hatasi verir.
@@ -259,6 +269,8 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
     APPEND VALUE stb_button( function = 'REFR' icon = '@42@' text = 'Yenile'
                              quickinfo = 'Listeyi yenile' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'DELE' icon = '@11@' text = 'Sil'
+                             quickinfo = 'Secili belgeleri tum UBL verisiyle sil' ) TO e_object->mt_toolbar ##NO_TEXT.
   ENDMETHOD.
 
   METHOD handle_top_user_command.
@@ -266,7 +278,81 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       WHEN 'REFR'.
         refresh_master( ).
         mo_top_grid->refresh_table_display( ).
+      WHEN 'DELE'.
+        delete_selected( ).
     ENDCASE.
+  ENDMETHOD.
+
+  METHOD delete_selected.
+    DATA lt_rows TYPE lvc_t_row.
+    mo_top_grid->get_selected_rows( IMPORTING et_index_rows = lt_rows ).
+    DELETE lt_rows WHERE rowtype IS NOT INITIAL.   " ara toplam/toplam satirlari
+    IF lt_rows IS INITIAL.
+      MESSAGE 'Silmek icin en az bir satir secin' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
+      RETURN.
+    ENDIF.
+
+    IF confirm_delete( lines( lt_rows ) ) = abap_false.
+      RETURN.
+    ENDIF.
+
+    DATA(lo_purge) = NEW zcl_zone_iarc_purge( ).
+    DATA lv_deleted TYPE i.
+    DATA lv_refused TYPE string.
+    LOOP AT lt_rows INTO DATA(ls_row).
+      READ TABLE mt_master INDEX ls_row-index INTO DATA(ls_master).
+      IF sy-subrc <> 0.
+        CONTINUE.
+      ENDIF.
+      DATA(ls_result) = lo_purge->delete( ls_master-provider_doc_id ).
+      IF ls_result-deleted = abap_true.
+        lv_deleted = lv_deleted + 1.
+      ELSEIF lv_refused IS INITIAL.
+        lv_refused = ls_result-message.   " ilk red nedeni kullaniciya gosterilir
+      ENDIF.
+    ENDLOOP.
+    COMMIT WORK.
+
+    clear_detail( ).
+    refresh_master( ).
+    mo_top_grid->refresh_table_display( ).
+
+    DATA lv_msg TYPE string.
+    IF lv_refused IS INITIAL.
+      lv_msg = |{ lv_deleted } belge silindi| ##NO_TEXT.
+      MESSAGE lv_msg TYPE 'S'.
+    ELSE.
+      lv_msg = |{ lv_deleted } belge silindi, { lines( lt_rows ) - lv_deleted } silinemedi. { lv_refused }| ##NO_TEXT.
+      MESSAGE lv_msg TYPE 'I'.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD confirm_delete.
+    DATA lv_answer   TYPE c LENGTH 1.
+    DATA lv_question TYPE c LENGTH 400.
+    lv_question = |{ iv_count } belge; kuyruk, ham XML ve tum UBL tablolarindan silinecek. Emin misiniz?| ##NO_TEXT.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = 'Belge Silme'
+        text_question         = lv_question
+        text_button_1         = 'Sil'
+        text_button_2         = 'Vazgec'
+        default_button        = '2'
+        display_cancel_button = abap_false
+      IMPORTING
+        answer                = lv_answer
+      EXCEPTIONS
+        OTHERS                = 1 ##NO_TEXT.
+    rv_confirmed = xsdbool( sy-subrc = 0 AND lv_answer = '1' ).
+  ENDMETHOD.
+
+  METHOD clear_detail.
+    " Silinen belgenin detayi alt gridde kalmasin.
+    CLEAR: mv_sel_bukrs, mv_sel_ettn,
+           mt_detail_line, mt_detail_tax, mt_detail_note, mt_detail_total.
+    IF mo_bottom_grid IS BOUND.
+      mo_bottom_grid->refresh_table_display( ).
+    ENDIF.
   ENDMETHOD.
 
   METHOD handle_top_double_click.
