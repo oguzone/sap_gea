@@ -107,6 +107,12 @@ CLASS zcl_zone_iarc_grid DEFINITION
     DATA mt_detail_total TYPE tt_kv.
 
     METHODS refresh_master.
+
+    " Ust grid'i yeniler ve basliktaki kayit sayisini gunceller
+    " (baslik yalnizca ilk gosterimde kuruluyordu - hep 0 kalirdi).
+    METHODS refresh_top_grid.
+    METHODS master_title
+      RETURNING VALUE(rv_title) TYPE lvc_title.
     METHODS build_screen.
     METHODS build_top_grid.
     METHODS show_detail.
@@ -160,8 +166,22 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       build_screen( ).
       build_top_grid( ).
     ELSE.
-      mo_top_grid->refresh_table_display( ).
+      refresh_top_grid( ).
     ENDIF.
+
+    " Sirket kodu girilmis ama sonuc bossa kullaniciya nedenini soyle.
+    IF ms_filter-bukrs IS NOT INITIAL AND mt_master IS INITIAL.
+      MESSAGE 'Secim kriterlerine uygun belge yok (ZONE_IARC_T006)' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD refresh_top_grid.
+    mo_top_grid->set_gridtitle( master_title( ) ).
+    mo_top_grid->refresh_table_display( ).
+  ENDMETHOD.
+
+  METHOD master_title.
+    rv_title = |Gelen e-Arsiv Belgeleri ({ lines( mt_master ) } kayit)| ##NO_TEXT.
   ENDMETHOD.
 
   METHOD refresh_master.
@@ -224,7 +244,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       zebra      = abap_true
       sel_mode   = 'A'
       cwidth_opt = abap_true
-      grid_title = |Gelen e-Arsiv Belgeleri ({ lines( mt_master ) } kayit)| ) ##NO_TEXT.
+      grid_title = master_title( ) ).
 
     DATA(lt_fcat) = build_master_fcat( ).
 
@@ -277,7 +297,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     CASE e_ucomm.
       WHEN 'REFR'.
         refresh_master( ).
-        mo_top_grid->refresh_table_display( ).
+        refresh_top_grid( ).
       WHEN 'DELE'.
         delete_selected( ).
     ENDCASE.
@@ -315,7 +335,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
     clear_detail( ).
     refresh_master( ).
-    mo_top_grid->refresh_table_display( ).
+    refresh_top_grid( ).
 
     DATA lv_msg TYPE string.
     IF lv_refused IS INITIAL.
