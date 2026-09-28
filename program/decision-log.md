@@ -488,3 +488,33 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_secret.clas.abap (yeni),
   src/zcl_zone_iarc_provider.clas.abap, src/README.md,
   program/risks-and-open-questions.md (S11 guncellendi)
 ```
+
+### Karar 018
+
+```text
+KONU: Grid raporunun adi ve yapisi - ZONE_IARC_GRID -> ZONE_IARC_INCOMING,
+  coklu secim kriteri, include'lara bolunmus OOP yapi
+KARAR: Program ZONE_IARC_INCOMING olarak yeniden adlandirildi (eski
+  ZONE_IARC_GRID repodan silindi; SAP'de elle silinmeli - abapGit
+  silinen nesneyi otomatik kaldirmayabilir). Program 3 include'a
+  bolundu: _TOP (TABLES), _SEL (4 blok / 14 SELECT-OPTIONS), _CLS
+  (LCL_APP singleton). Olay bloklari tek satir; LCL_APP secim ekranini
+  ZCL_ZONE_IARC_GRID=>TY_FILTER'a (RANGE tipleri) cevirir, grid sinifi
+  T006 LEFT OUTER JOIN T009 uzerinde tum kriterleri IN ile uygular.
+  Ust gride LIFNR, fatura tipi, senaryo, odenecek tutar, FI/MIRO belge
+  no kolonlari eklendi; docking orani 95 -> 60 (kriterler gorunur kalsin).
+  Blok basliklari TEXT-bNN = TPOOL ID 'I' (text symbol); secim metinleri
+  TPOOL ID 'S' (LENGTH = metin + 8, abapGit formati).
+SEÇENEKLER: Tek dosya rapor (eski hali) / include + lokal sinif (secildi)
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın ("programin adini zone_iarc_incoming olarak
+  degistir, secim parametrelerini cokla ... kodlari oop yaz, include'lara
+  bolerek clean code mantiginda olsun")
+GEREKÇE: workspace_one/ZPROFIL_HESAPLAMA (zisu_edm_p001) include deseni
+  ile tutarlilik; mantik siniflarda, olay bloklari ince. Muhatap unvani
+  ve ETTN kriterleri LOWER CASE - UBL'den gelen deger buyuk/kucuk harf
+  korunarak saklandigi icin girilen deger oldugu gibi aranir.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_incoming*.prog.* (yeni),
+  src/zone_iarc_grid.prog.* (silindi), src/zcl_zone_iarc_grid.clas.abap,
+  src/README.md
+```

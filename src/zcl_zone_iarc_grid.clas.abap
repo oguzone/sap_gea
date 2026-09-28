@@ -28,13 +28,53 @@ CLASS zcl_zone_iarc_grid DEFINITION
         ettn            TYPE zone_iarc_t006-ettn,
         status          TYPE zone_iarc_t006-status,
         supplier_vkn    TYPE zone_iarc_t006-supplier_vkn,
+        lifnr           TYPE zone_iarc_t006-lifnr,
         doc_date        TYPE zone_iarc_t006-doc_date,
         amount          TYPE zone_iarc_t006-amount,
         currency        TYPE zone_iarc_t006-currency,
+        fi_belnr        TYPE zone_iarc_t006-fi_belnr,
+        miro_belnr      TYPE zone_iarc_t006-miro_belnr,
         invoice_id      TYPE zone_iarc_t009-invoice_id,
         supplier_name   TYPE zone_iarc_t009-supplier_name,
+        inv_type_code   TYPE zone_iarc_t009-inv_type_code,
+        profile_id      TYPE zone_iarc_t009-profile_id,
+        payable_amount  TYPE zone_iarc_t009-payable_amount,
       END OF ty_master.
     TYPES tt_master TYPE STANDARD TABLE OF ty_master WITH DEFAULT KEY.
+
+    " Secim ekranindaki SELECT-OPTIONS'larin karsiligi (bos aralik = filtre yok).
+    TYPES: tr_bukrs    TYPE RANGE OF zone_iarc_t006-bukrs,
+           tr_ettn     TYPE RANGE OF zone_iarc_t006-ettn,
+           tr_docid    TYPE RANGE OF zone_iarc_t006-provider_doc_id,
+           tr_vkn      TYPE RANGE OF zone_iarc_t006-supplier_vkn,
+           tr_lifnr    TYPE RANGE OF zone_iarc_t006-lifnr,
+           tr_date     TYPE RANGE OF zone_iarc_t006-doc_date,
+           tr_status   TYPE RANGE OF zone_iarc_t006-status,
+           tr_currency TYPE RANGE OF zone_iarc_t006-currency,
+           tr_amount   TYPE RANGE OF zone_iarc_t006-amount,
+           tr_belnr    TYPE RANGE OF zone_iarc_t006-fi_belnr,
+           tr_invid    TYPE RANGE OF zone_iarc_t009-invoice_id,
+           tr_sname    TYPE RANGE OF zone_iarc_t009-supplier_name,
+           tr_invtype  TYPE RANGE OF zone_iarc_t009-inv_type_code,
+           tr_profile  TYPE RANGE OF zone_iarc_t009-profile_id.
+
+    TYPES:
+      BEGIN OF ty_filter,
+        bukrs    TYPE tr_bukrs,
+        ettn     TYPE tr_ettn,
+        docid    TYPE tr_docid,
+        vkn      TYPE tr_vkn,
+        lifnr    TYPE tr_lifnr,
+        docdate  TYPE tr_date,
+        status   TYPE tr_status,
+        currency TYPE tr_currency,
+        amount   TYPE tr_amount,
+        belnr    TYPE tr_belnr,
+        invid    TYPE tr_invid,
+        sname    TYPE tr_sname,
+        invtype  TYPE tr_invtype,
+        profile  TYPE tr_profile,
+      END OF ty_filter.
 
     TYPES:
       BEGIN OF ty_kv,
@@ -45,8 +85,7 @@ CLASS zcl_zone_iarc_grid DEFINITION
 
     METHODS run
       IMPORTING
-        !iv_bukrs  TYPE bukrs  OPTIONAL
-        !iv_status TYPE zone_iarc_t006-status OPTIONAL.
+        !is_filter TYPE ty_filter.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
@@ -56,8 +95,7 @@ CLASS zcl_zone_iarc_grid DEFINITION
     DATA mo_bottom_grid TYPE REF TO cl_gui_alv_grid.
 
     DATA mt_master TYPE tt_master.
-    DATA mv_bukrs  TYPE bukrs.
-    DATA mv_status TYPE zone_iarc_t006-status.
+    DATA ms_filter TYPE ty_filter.
 
     DATA mv_sel_bukrs TYPE bukrs.
     DATA mv_sel_ettn  TYPE zone_iarc_t006-ettn.
@@ -105,8 +143,7 @@ ENDCLASS.
 CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
   METHOD run.
-    mv_bukrs  = iv_bukrs.
-    mv_status = iv_status.
+    ms_filter = is_filter.
     refresh_master( ).
 
     IF mo_cont IS NOT BOUND.
@@ -118,20 +155,35 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD refresh_master.
-    DATA lr_status TYPE RANGE OF zone_iarc_t006-status.
-    IF mv_status IS NOT INITIAL.
-      lr_status = VALUE #( ( sign = 'I' option = 'EQ' low = mv_status ) ).
+    " Secim ekrani ilk acildiginda (sirket kodu henuz girilmemisken)
+    " tum sirketleri cekmemek icin: sirket kodu yoksa liste bos gelir.
+    IF ms_filter-bukrs IS INITIAL.
+      CLEAR mt_master.
+      RETURN.
     ENDIF.
 
     SELECT a~provider_doc_id, a~bukrs, a~ettn, a~status, a~supplier_vkn,
-           a~doc_date, a~amount, a~currency,
-           b~invoice_id, b~supplier_name
+           a~lifnr, a~doc_date, a~amount, a~currency, a~fi_belnr, a~miro_belnr,
+           b~invoice_id, b~supplier_name, b~inv_type_code, b~profile_id,
+           b~payable_amount
       FROM zone_iarc_t006 AS a
       LEFT OUTER JOIN zone_iarc_t009 AS b
         ON b~bukrs = a~bukrs AND b~ettn = a~ettn
       INTO CORRESPONDING FIELDS OF TABLE @mt_master
-      WHERE a~bukrs  = @mv_bukrs
-        AND a~status IN @lr_status
+      WHERE a~bukrs           IN @ms_filter-bukrs
+        AND a~ettn            IN @ms_filter-ettn
+        AND a~provider_doc_id IN @ms_filter-docid
+        AND a~supplier_vkn    IN @ms_filter-vkn
+        AND a~lifnr           IN @ms_filter-lifnr
+        AND a~doc_date        IN @ms_filter-docdate
+        AND a~status          IN @ms_filter-status
+        AND a~currency        IN @ms_filter-currency
+        AND a~amount          IN @ms_filter-amount
+        AND a~fi_belnr        IN @ms_filter-belnr
+        AND b~invoice_id      IN @ms_filter-invid
+        AND b~supplier_name   IN @ms_filter-sname
+        AND b~inv_type_code   IN @ms_filter-invtype
+        AND b~profile_id      IN @ms_filter-profile
       ORDER BY a~received_at DESCENDING.
   ENDMETHOD.
 
@@ -142,7 +194,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       repid = sy-repid
       dynnr = sy-dynnr
       side  = cl_gui_docking_container=>dock_at_bottom
-      ratio = 95 ).
+      ratio = 60 ).  " secim ekraninin ust kismi (14 kriter) gorunur kalsin
 
     mo_splitter = NEW cl_gui_splitter_container(
       parent  = mo_cont
@@ -187,7 +239,14 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       ( fieldname = 'DOC_DATE'        ref_table = 'ZONE_IARC_T006' ref_field = 'DOC_DATE'        coltext = 'Fatura Tarihi' )
       ( fieldname = 'AMOUNT'          ref_table = 'ZONE_IARC_T006' ref_field = 'AMOUNT'          coltext = 'Tutar'
         cfieldname = 'CURRENCY' )
-      ( fieldname = 'CURRENCY'        ref_table = 'ZONE_IARC_T006' ref_field = 'CURRENCY'        coltext = 'Para Birimi' ) ) ##NO_TEXT.
+      ( fieldname = 'CURRENCY'        ref_table = 'ZONE_IARC_T006' ref_field = 'CURRENCY'        coltext = 'Para Birimi' )
+      ( fieldname = 'PAYABLE_AMOUNT'  ref_table = 'ZONE_IARC_T009' ref_field = 'PAYABLE_AMOUNT'  coltext = 'Odenecek Tutar'
+        cfieldname = 'CURRENCY' )
+      ( fieldname = 'LIFNR'           ref_table = 'ZONE_IARC_T006' ref_field = 'LIFNR'           coltext = 'Cari No' )
+      ( fieldname = 'INV_TYPE_CODE'   ref_table = 'ZONE_IARC_T009' ref_field = 'INV_TYPE_CODE'   coltext = 'Fatura Tipi' )
+      ( fieldname = 'PROFILE_ID'      ref_table = 'ZONE_IARC_T009' ref_field = 'PROFILE_ID'      coltext = 'Senaryo' )
+      ( fieldname = 'FI_BELNR'        ref_table = 'ZONE_IARC_T006' ref_field = 'FI_BELNR'        coltext = 'FI Belge No' )
+      ( fieldname = 'MIRO_BELNR'      ref_table = 'ZONE_IARC_T006' ref_field = 'MIRO_BELNR'      coltext = 'MIRO Belge No' ) ) ##NO_TEXT.
   ENDMETHOD.
 
   METHOD build_kv_fcat.

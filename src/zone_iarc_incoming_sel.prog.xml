@@ -3,10 +3,10 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <PROGDIR>
-    <NAME>ZONE_IARC_GRID</NAME>
+    <NAME>ZONE_IARC_INCOMING_SEL</NAME>
     <DBAPL>S</DBAPL>
     <DBNA>D$</DBNA>
-    <SUBC>1</SUBC>
+    <SUBC>I</SUBC>
     <APPL>S</APPL>
     <RLOAD>E</RLOAD>
     <FIXPT>X</FIXPT>
@@ -15,8 +15,8 @@
    <TPOOL>
     <item>
      <ID>R</ID>
-     <ENTRY>Gelen e-Arsiv Grid Cockpit</ENTRY>
-     <LENGTH>26</LENGTH>
+     <ENTRY>Gelen e-Arsiv - Secim Ekrani</ENTRY>
+     <LENGTH>28</LENGTH>
     </item>
    </TPOOL>
   </asx:values>
