@@ -52,7 +52,7 @@ CLASS zcl_zone_iarc_base IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD load_endpoint_config.
-    SELECT SINGLE endpoint_url timeout_sec retry_count FROM zone_iarc_t003
+    SELECT SINGLE endpoint_url, timeout_sec, retry_count FROM zone_iarc_t003
       INTO (@mv_endpoint_auth, @mv_timeout_sec, @mv_retry_count)
       WHERE provider_key  = @mv_provider_key
         AND environment   = @iv_environment
@@ -89,7 +89,7 @@ CLASS zcl_zone_iarc_base IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_company_params.
-    SELECT SINGLE comp_tax_no comp_serial_no acc_user_code acc_tax_no acc_pwd_key
+    SELECT SINGLE comp_tax_no, comp_serial_no, acc_user_code, acc_tax_no, acc_pwd_key
       FROM zone_iarc_t001
       INTO (@ev_comp_tax_no, @ev_comp_serial_no, @ev_acc_user_code, @ev_acc_tax_no, @DATA(lv_pwd_key))
       WHERE bukrs = @iv_bukrs.

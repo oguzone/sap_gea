@@ -100,7 +100,7 @@ CLASS zcl_zone_iarc_config IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_posting_rule.
-    SELECT SINGLE default_hkont default_mwskz tolerance_pct
+    SELECT SINGLE default_hkont, default_mwskz, tolerance_pct
       FROM zone_iarc_t005
       INTO (@ev_hkont, @ev_mwskz, @DATA(lv_tol))
       WHERE bukrs    = @iv_bukrs
