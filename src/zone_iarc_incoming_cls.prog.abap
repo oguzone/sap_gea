@@ -3,23 +3,17 @@
 *&---------------------------------------------------------------------*
 *& LCL_APP : Uygulama akisi. Tek sorumlulugu secim ekrani degerlerini
 *&           ZCL_ZONE_IARC_GRID=>TY_FILTER'a cevirip grid'e devretmek.
-*&           Singleton - docking container/grid ayni oturumda bir kez
-*&           yaratilmali (her PBO'da yenisi yaratilirsa kontroller
-*&           ust uste biner).
+*&           Her F8'de yeni ornek yaratilir; ornek GO_APP (TOP) ile
+*&           liste ekrani acik kaldigi surece yasatilir (grid olay
+*&           isleyicileri bu nesneye bagli).
 *&---------------------------------------------------------------------*
-CLASS lcl_app DEFINITION FINAL CREATE PRIVATE.
+CLASS lcl_app DEFINITION FINAL.
   PUBLIC SECTION.
-    CLASS-METHODS get
-      RETURNING VALUE(ro_app) TYPE REF TO lcl_app.
-
-    METHODS on_selection_screen_output.
+    METHODS constructor.
+    METHODS execute.
 
   PRIVATE SECTION.
-    CLASS-DATA go_instance TYPE REF TO lcl_app.
-
     DATA mo_grid TYPE REF TO zcl_zone_iarc_grid.
-
-    METHODS constructor.
 
     METHODS build_filter
       RETURNING VALUE(rs_filter) TYPE zcl_zone_iarc_grid=>ty_filter.
@@ -28,23 +22,16 @@ ENDCLASS.
 
 CLASS lcl_app IMPLEMENTATION.
 
-  METHOD get.
-    IF go_instance IS NOT BOUND.
-      go_instance = NEW #( ).
-    ENDIF.
-    ro_app = go_instance.
-  ENDMETHOD.
-
   METHOD constructor.
     mo_grid = NEW #( ).
   ENDMETHOD.
 
-  METHOD on_selection_screen_output.
-    " SY-REPID/SY-DYNNR burada (rapor baglaminda) okunur - grid sinifinin
-    " icinde SY-REPID sinif havuzunu gosterir.
-    mo_grid->run( is_filter = build_filter( )
-                  iv_repid  = sy-repid
-                  iv_dynnr  = sy-dynnr ).
+  METHOD execute.
+    IF mo_grid->run( build_filter( ) ) = abap_true.
+      " Grid'ler DEFAULT_SCREEN'e (liste ekrani) yerlesti; liste ekraninin
+      " acilmasi icin en az bir liste satiri gerekir - kontrol bunu ortur.
+      WRITE space.
+    ENDIF.
   ENDMETHOD.
 
   METHOD build_filter.

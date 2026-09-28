@@ -9,11 +9,11 @@ CLASS zcl_zone_iarc_grid DEFINITION
     " detayi (Kalemler/Vergi/Dip Toplam/Notlar arasinda arac cubugu
     " butonlariyla gecis - "tab" gibi davranir).
     "
-    " Ozel dynpro YOK - CL_GUI_DOCKING_CONTAINER dogrudan aktif secim
-    " ekranina (sy-repid/sy-dynnr) baglanir. Bu teknik bu ayni musteri
-    " hattinda (egdp-abap/ZCL_EGDP_COCKPIT) zaten calisir durumda
-    " dogrulanmisti - aynen kopyalandi (bkz. program/decision-log.md
-    " Karar 015).
+    " Ozel dynpro YOK - kontroller CL_GUI_CONTAINER=>DEFAULT_SCREEN'e
+    " (liste ekraninin tamami) yerlestirilir; cagiran rapor START-OF-
+    " SELECTION'da RUN'i cagirip ardindan bir liste satiri yazarak (WRITE)
+    " liste ekranini acar. Secim ekranina docking baglama teknigi bu
+    " sistemde ALV gostermedi (Karar 023, Karar 015/022'nin yerine).
     "
     " CL_GUI_TAB_STRIP (gercek native tab kontrolu) kullanilmadi - bu
     " kod tabaninda hic dogrulanmis bir ornegi yok, ekstra risk olurdu.
@@ -83,28 +83,23 @@ CLASS zcl_zone_iarc_grid DEFINITION
       END OF ty_kv.
     TYPES tt_kv TYPE STANDARD TABLE OF ty_kv WITH DEFAULT KEY.
 
-    " IV_REPID/IV_DYNNR: grid'in baglanacagi secim ekrani. Cagiran rapor
-    " kendi SY-REPID/SY-DYNNR degerini vermeli - bu sinifin icinde
-    " SY-REPID rapor adini degil sinif havuzunun adini (ZCL_...==CP)
-    " tasir; docking o zaman var olmayan bir ekrana baglanir ve ALV
-    " hic gorunmez (Karar 022).
+    " Veriyi okur; kayit varsa grid'leri kurar ve ABAP_TRUE doner - cagiran
+    " rapor bu durumda liste ekranini acmalidir (WRITE). Kayit yoksa
+    " durum cubugunda uyari verir, ABAP_FALSE doner (secim ekrani kalir).
     METHODS run
       IMPORTING
-        !is_filter TYPE ty_filter
-        !iv_repid  TYPE sy-repid
-        !iv_dynnr  TYPE sy-dynnr.
+        !is_filter          TYPE ty_filter
+      RETURNING
+        VALUE(rv_displayed) TYPE abap_bool.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
-    DATA mo_cont        TYPE REF TO cl_gui_docking_container.
     DATA mo_splitter    TYPE REF TO cl_gui_splitter_container.
     DATA mo_top_grid    TYPE REF TO cl_gui_alv_grid.
     DATA mo_bottom_grid TYPE REF TO cl_gui_alv_grid.
 
     DATA mt_master TYPE tt_master.
     DATA ms_filter TYPE ty_filter.
-    DATA mv_repid  TYPE sy-repid.
-    DATA mv_dynnr  TYPE sy-dynnr.
 
     DATA mv_sel_bukrs TYPE bukrs.
     DATA mv_sel_ettn  TYPE zone_iarc_t006-ettn.
@@ -169,21 +164,16 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
   METHOD run.
     ms_filter = is_filter.
-    mv_repid  = iv_repid.
-    mv_dynnr  = iv_dynnr.
     refresh_master( ).
 
-    IF mo_cont IS NOT BOUND.
-      build_screen( ).
-      build_top_grid( ).
-    ELSE.
-      refresh_top_grid( ).
+    IF mt_master IS INITIAL.
+      MESSAGE 'Secim kriterlerine uygun belge yok (ZONE_IARC_T006)' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
+      RETURN.
     ENDIF.
 
-    " Sirket kodu girilmis ama sonuc bossa kullaniciya nedenini soyle.
-    IF ms_filter-bukrs IS NOT INITIAL AND mt_master IS INITIAL.
-      MESSAGE 'Secim kriterlerine uygun belge yok (ZONE_IARC_T006)' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
-    ENDIF.
+    build_screen( ).
+    build_top_grid( ).
+    rv_displayed = abap_true.
   ENDMETHOD.
 
   METHOD refresh_top_grid.
@@ -196,8 +186,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD refresh_master.
-    " Secim ekrani ilk acildiginda (sirket kodu henuz girilmemisken)
-    " tum sirketleri cekmemek icin: sirket kodu yoksa liste bos gelir.
+    " Tum sirketleri tek seferde cekmemek icin sirket kodu zorunlu.
     IF ms_filter-bukrs IS INITIAL.
       CLEAR mt_master.
       RETURN.
@@ -229,16 +218,9 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD build_screen.
-    " Docking'i AKTIF secim ekranina baglar - ayri dynpro gerekmez
-    " (egdp-abap/ZCL_EGDP_COCKPIT'te dogrulanmis teknik).
-    mo_cont = NEW cl_gui_docking_container(
-      repid = mv_repid
-      dynnr = mv_dynnr
-      side  = cl_gui_docking_container=>dock_at_bottom
-      ratio = 60 ).  " secim ekraninin ust kismi (14 kriter) gorunur kalsin
-
+    " Liste ekraninin tamami (ozel dynpro/docking gerekmez).
     mo_splitter = NEW cl_gui_splitter_container(
-      parent  = mo_cont
+      parent  = cl_gui_container=>default_screen
       rows    = 2
       columns = 1 ).
     mo_splitter->set_row_height( id = 1 height = 55 ).

@@ -620,3 +620,28 @@ GEREKÇE: Konteyner sahibi ekran daima cagiran rapor olmali. Not: ayni
 ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap,
   src/zone_iarc_incoming_cls.prog.abap
 ```
+
+### Karar 023
+
+```text
+KONU: ZONE_IARC_INCOMING - ALV hic gorunmuyor (Karar 022 sonrasi da)
+KARAR: Secim ekranina CL_GUI_DOCKING_CONTAINER baglama teknigi (Karar
+  015/022) terk edildi. Yeni akis: secim ekrani -> F8 -> START-OF-
+  SELECTION'da ZCL_ZONE_IARC_GRID->RUN( filtre ). Kayit varsa splitter
+  CL_GUI_CONTAINER=>DEFAULT_SCREEN'e (liste ekraninin tamami) kurulur ve
+  rapor WRITE space ile liste ekranini acar; kontroller listeyi ortur.
+  Kayit yoksa durum cubugunda uyari, secim ekrani kalir. F3 secim
+  ekranina doner. LCL_APP singleton kaldirildi; her F8'de yeni ornek,
+  GO_APP global referansi ile yasatilir.
+SEÇENEKLER: Ozel dynpro + custom container (abapGit DYNPROS serilestirme
+  gerektirir, daha fazla hareketli parca) / DEFAULT_SCREEN (secildi)
+KARAR TARİHİ: 2026-09-28
+KARARI VEREN: Oğuz Sayın (hata bildirimi: "alv getirmiyor, uyari da
+  vermiyor")
+GEREKÇE: DEFAULT_SCREEN + liste ekrani, ozel dynpro gerektirmeyen ve
+  secim ekrani yasam dongusune bagli olmayan standart teknik. Ayrica F8
+  ile calistirma kullanicinin bekledigi davranis.
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_grid.clas.abap,
+  src/zone_iarc_incoming.prog.abap, src/zone_iarc_incoming_top.prog.abap,
+  src/zone_iarc_incoming_cls.prog.abap
+```

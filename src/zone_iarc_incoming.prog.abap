@@ -22,7 +22,8 @@ INCLUDE zone_iarc_incoming_cls.   " Lokal siniflar
 *&---------------------------------------------------------------------*
 *& Olaylar
 *&---------------------------------------------------------------------*
-AT SELECTION-SCREEN OUTPUT.
-  " Grid, docking container ile AKTIF secim ekranina baglanir; her
-  " PBO'da guncel secim kriterleriyle liste yenilenir (Enter = yenile).
-  lcl_app=>get( )->on_selection_screen_output( ).
+START-OF-SELECTION.
+  " F8: tam ekran split grid (ust liste / alt detay). Geri (F3) secim
+  " ekranina doner (Karar 023).
+  go_app = NEW #( ).
+  go_app->execute( ).
