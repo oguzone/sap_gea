@@ -244,7 +244,8 @@ CLASS zcl_zone_iarc_dashboard_html IMPLEMENTATION.
       'th{text-align:left;font-size:10px;color:#64748b;text-transform:uppercase;' &&
       'padding:6px 8px;border-bottom:1px solid #e2e8f0;}' &&
       'td{padding:6px 8px;border-bottom:1px solid #f1f5f9;white-space:nowrap;}' &&
-      'td.r{text-align:right;}' &&
+      'td.r,th.r{text-align:right;}' &&
+      '.warn{color:#f59e0b;font-weight:600;}' &&
       '.badge{display:inline-block;padding:2px 8px;border-radius:10px;color:#ffffff;' &&
       'font-size:10px;font-weight:600;}' &&
       '.empty{color:#94a3b8;padding:6px 0;}' &&
@@ -423,23 +424,30 @@ CLASS zcl_zone_iarc_dashboard_html IMPLEMENTATION.
     LOOP AT lt_recent INTO DATA(ls_doc).
       DATA(lv_color) = status_color( ls_doc-status ).
       DATA(lv_supplier) = COND string( WHEN ls_doc-supplier_name IS NOT INITIAL THEN |{ ls_doc-supplier_name }|
-                                       ELSE |{ ls_doc-supplier_vkn }| ).
+                                       ELSE `-` ).
+      " Cari eslesmemisse turuncu uyari.
+      DATA(lv_lifnr_cell) = COND string( WHEN ls_doc-lifnr IS NOT INITIAL
+                                         THEN esc( |{ ls_doc-lifnr ALPHA = OUT }| )
+                                         ELSE `<span class="warn">Eslesmedi</span>` ) ##NO_TEXT.
       DATA(lv_invoice)  = COND string( WHEN ls_doc-invoice_id IS NOT INITIAL THEN |{ ls_doc-invoice_id }|
                                        ELSE |{ ls_doc-provider_doc_id }| ).
       lv_rows = lv_rows &&
         |<tr><td>{ ls_doc-doc_date DATE = USER }</td>| &&
         |<td>{ esc( lv_invoice ) }</td>| &&
+        |<td>{ esc( ls_doc-supplier_vkn ) }</td>| &&
         |<td>{ esc( lv_supplier ) }</td>| &&
+        |<td>{ lv_lifnr_cell }</td>| &&
         |<td class="r">{ esc( format_amount( iv_amount = ls_doc-amount iv_currency = ls_doc-currency ) ) }</td>| &&
         |<td><span class="badge" style="background:{ lv_color };">{ esc( ls_doc-status ) }</span></td></tr>|.
     ENDLOOP.
     IF lv_rows IS INITIAL.
-      lv_rows = |<tr><td colspan="5" class="empty">Secilen donemde belge yok</td></tr>| ##NO_TEXT.
+      lv_rows = |<tr><td colspan="7" class="empty">Belge yok</td></tr>| ##NO_TEXT.
     ENDIF.
 
     rv_html =
       |<div class="card"><h2>Son Gelen Belgeler</h2><table>| &&
-      |<tr><th>Tarih</th><th>Fatura No</th><th>Satici</th><th class="r">Tutar</th><th>Durum</th></tr>| &&
+      |<tr><th>Tarih</th><th>Fatura No</th><th>VKN/TCKN</th><th>Satici</th><th>Cari No</th>| &&
+      |<th class="r">Tutar</th><th>Durum</th></tr>| &&
       lv_rows && |</table></div>| ##NO_TEXT.
   ENDMETHOD.
 
