@@ -23,8 +23,9 @@ CLASS zcl_zone_iarc_grid DEFINITION
     " TOTAL/NOTE) yok edilip yeniden yaratiliyor (yapisi degistigi icin
     " ayni grid instance'ini yeniden kullanmak yerine bu daha guvenli).
 
+    " Veritabanindan okunan duz satir (SELECT hedefi - ic tablo iceremez).
     TYPES:
-      BEGIN OF ty_master,
+      BEGIN OF ty_master_db,
         provider_doc_id TYPE zone_iarc_t006-provider_doc_id,
         bukrs           TYPE zone_iarc_t006-bukrs,
         ettn            TYPE zone_iarc_t006-ettn,
@@ -41,6 +42,15 @@ CLASS zcl_zone_iarc_grid DEFINITION
         inv_type_code   TYPE zone_iarc_t009-inv_type_code,
         profile_id      TYPE zone_iarc_t009-profile_id,
         payable_amount  TYPE zone_iarc_t009-payable_amount,
+      END OF ty_master_db.
+    TYPES tt_master_db TYPE STANDARD TABLE OF ty_master_db WITH DEFAULT KEY.
+
+    " Grid satiri = veritabani satiri + hucre renkleri (Durum sutunu).
+    TYPES:
+      BEGIN OF ty_master.
+        INCLUDE TYPE ty_master_db.
+    TYPES:
+        t_color TYPE lvc_t_scol,
       END OF ty_master.
     TYPES tt_master TYPE STANDARD TABLE OF ty_master WITH DEFAULT KEY.
 
@@ -128,6 +138,11 @@ CLASS zcl_zone_iarc_grid DEFINITION
     DATA mt_detail_total TYPE tt_kv.
 
     METHODS refresh_master.
+    METHODS status_color
+      IMPORTING
+        !iv_status    TYPE zone_iarc_t006-status
+      RETURNING
+        VALUE(rv_col) TYPE lvc_col.
 
     " Ust grid'i yeniler ve basliktaki kayit sayisini gunceller
     " (baslik yalnizca ilk gosterimde kuruluyordu - hep 0 kalirdi).
@@ -317,6 +332,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       RETURN.
     ENDIF.
 
+    DATA lt_db TYPE tt_master_db.
     SELECT a~provider_doc_id, a~bukrs, a~ettn, a~status, a~supplier_vkn,
            a~lifnr, a~doc_date, a~amount, a~currency, a~fi_belnr, a~miro_belnr,
            b~invoice_id, b~supplier_name, b~inv_type_code, b~profile_id,
@@ -324,7 +340,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       FROM zone_iarc_t006 AS a
       LEFT OUTER JOIN zone_iarc_t009 AS b
         ON b~bukrs = a~bukrs AND b~ettn = a~ettn
-      INTO CORRESPONDING FIELDS OF TABLE @mt_master
+      INTO CORRESPONDING FIELDS OF TABLE @lt_db
       WHERE a~bukrs           IN @ms_filter-bukrs
         AND a~ettn            IN @ms_filter-ettn
         AND a~provider_doc_id IN @ms_filter-docid
@@ -340,6 +356,23 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
         AND b~inv_type_code   IN @ms_filter-invtype
         AND b~profile_id      IN @ms_filter-profile
       ORDER BY a~received_at DESCENDING.
+
+    mt_master = CORRESPONDING #( lt_db ).
+    LOOP AT mt_master ASSIGNING FIELD-SYMBOL(<ls_master>).
+      <ls_master>-t_color = VALUE #( ( fname = 'STATUS'
+                                       color = VALUE #( col = status_color( <ls_master>-status ) int = 1 ) ) ).
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD status_color.
+    " ALV renk kodlari (COL tip grubu).
+    rv_col = SWITCH #( iv_status
+      WHEN 'EXCEPTION' THEN col_negative    " kirmizi
+      WHEN 'REJECTED'  THEN col_group       " turuncu
+      WHEN 'MAPPED'    THEN col_total       " sari - muhasebeye hazir
+      WHEN 'PARKED'    THEN col_heading     " mavi
+      WHEN 'POSTED'    THEN col_positive    " yesil
+      ELSE                  col_normal ).   " gri - NEW / PARSED
   ENDMETHOD.
 
   METHOD build_screen.
@@ -370,6 +403,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       zebra      = abap_true
       sel_mode   = 'A'
       cwidth_opt = abap_true
+      ctab_fname = 'T_COLOR'          " Durum hucresi renkleri
       grid_title = master_title( ) ).
 
     DATA(lt_fcat) = build_master_fcat( ).
