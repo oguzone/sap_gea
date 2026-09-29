@@ -851,3 +851,35 @@ KARARI VEREN: Oğuz Sayın
 ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_history.clas.* (yeni),
   src/zcl_zone_iarc_grid.clas.abap
 ```
+
+### Karar 033
+
+```text
+KONU: Gelen e-Arsiv Kokpit - tek giris noktasi (butonlar + gosterge paneli)
+KARAR: Yeni rapor ZONE_IARC_MAIN (_TOP/_SEL/_CLS/_MOD include). Secim
+  ekrani: sirket kodu (bos=hepsi), fatura tarihi (varsayilan son 12 ay).
+  F8 -> ekran 0100:
+  - Sol: 4 cerceve, 14 gercek dynpro butonu (ikonlu):
+    Belgeler: Gelen e-Arsiv Listesi (ZONE_IARC_INCOMING - sirket/donem
+      aktarilir), Adiniza Duzenlenen Belgeler (ZONE_IARC_POLL - Bayt'tan
+      cek), Belge Goruntuleyici (ZONE_IARC_VIEWER), Onay Listesi
+      (ZONE_IARC_COCKPIT)
+    Aktarim: Manuel UBL Aktarimi (ZONE_IARC_UPLOAD)
+    Uyarlama: T001/T002/T003/T004/T005/T017 (VIEW_MAINTENANCE_CALL - SM30),
+      Servis Sifresi (ZONE_IARC_SECRET)
+    Izleme: Arka Plan Isleri (SM37), Paneli Yenile
+  - Sag: CC_DASH custom container + CL_GUI_HTML_VIEWER (ZCL_ZONE_IARC_
+    DASHBOARD + _DASHBOARD_HTML): ust bant (sirket/donem), 6 KPI (gelen,
+    muhasebelesen, beklemede=MAPPED+PARKED, cari eslesmeyen, hatali,
+    toplam tutar), durum halkasi + muhasebelesme orani, son 12 ay SVG
+    sutun grafigi (gelen/muhasebelesen), en yuksek 5 satici, son 8 belge.
+  Acilan programdan donunce panel otomatik yenilenir.
+  Butonlar HTML (SAPEVENT) yerine dynpro PUSH: HTML ici tiklama bu
+  sistemde dogrulanmadi; dynpro/CUA formati workspace/zeinvoice
+  zeinv_p004 ("E-Fatura Kullanici Menusu") gercek export'undan alindi.
+  Ikon adlari yalnizca sistemde kullanimi dogrulanmis olanlardan.
+KARAR TARİHİ: 2026-09-29
+KARARI VEREN: Oğuz Sayın
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_main*.prog.* (yeni),
+  src/zcl_zone_iarc_dashboard.clas.* (yeni), src/zcl_zone_iarc_dashboard_html.clas.* (yeni)
+```
