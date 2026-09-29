@@ -50,7 +50,8 @@ CLASS zcl_zone_iarc_grid DEFINITION
       BEGIN OF ty_master.
         INCLUDE TYPE ty_master_db.
     TYPES:
-        t_color TYPE lvc_t_scol,
+        status_text TYPE c LENGTH 30,     " Durum - Turkce metin (Karar 035)
+        t_color     TYPE lvc_t_scol,
       END OF ty_master.
     TYPES tt_master TYPE STANDARD TABLE OF ty_master WITH DEFAULT KEY.
 
@@ -359,7 +360,8 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
 
     mt_master = CORRESPONDING #( lt_db ).
     LOOP AT mt_master ASSIGNING FIELD-SYMBOL(<ls_master>).
-      <ls_master>-t_color = VALUE #( ( fname = 'STATUS'
+      <ls_master>-status_text = zcl_zone_iarc_status=>text( <ls_master>-status ).
+      <ls_master>-t_color = VALUE #( ( fname = 'STATUS_TEXT'
                                        color = VALUE #( col = status_color( <ls_master>-status ) int = 1 ) ) ).
     ENDLOOP.
   ENDMETHOD.
@@ -425,7 +427,9 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
         hotspot = abap_true )
       ( fieldname = 'ETTN'            ref_table = 'ZONE_IARC_T006' ref_field = 'ETTN'            coltext = 'ETTN' )
       ( fieldname = 'BUKRS'           ref_table = 'ZONE_IARC_T006' ref_field = 'BUKRS'           coltext = 'Sirket Kodu' )
-      ( fieldname = 'STATUS'          ref_table = 'ZONE_IARC_T006' ref_field = 'STATUS'          coltext = 'Durum' )
+      ( fieldname = 'STATUS_TEXT'     coltext = 'Durum' inttype = 'C' intlen = 30 outputlen = 16 )
+      ( fieldname = 'STATUS'          ref_table = 'ZONE_IARC_T006' ref_field = 'STATUS'          coltext = 'Durum Kodu'
+        no_out = abap_true )
       ( fieldname = 'SUPPLIER_VKN'    ref_table = 'ZONE_IARC_T006' ref_field = 'SUPPLIER_VKN'    coltext = 'Satici VKN/TCKN' )
       ( fieldname = 'SUPPLIER_NAME'   ref_table = 'ZONE_IARC_T009' ref_field = 'SUPPLIER_NAME'   coltext = 'Satici Adi' )
       ( fieldname = 'DOC_DATE'        ref_table = 'ZONE_IARC_T006' ref_field = 'DOC_DATE'        coltext = 'Fatura Tarihi' )

@@ -304,7 +304,7 @@ CLASS zcl_zone_iarc_dashboard_html IMPLEMENTATION.
       kpi( iv_label = `Muhasebelesen`    iv_value = |{ lv_posted }|    iv_color = `#16a34a` iv_hint = |%{ lv_rate }| ) &&
       kpi( iv_label = `Beklemede`        iv_value = |{ lv_waiting }|   iv_color = `#eab308` iv_hint = `hazir + park` ) &&
       kpi( iv_label = `Cari Eslesmeyen`  iv_value = |{ lv_no_vendor }| iv_color = `#f59e0b` iv_hint = `tedarikci yok` ) &&
-      kpi( iv_label = `Hatali`           iv_value = |{ lv_error }|     iv_color = `#dc2626` iv_hint = `EXCEPTION` ) &&
+      kpi( iv_label = `Hatali`           iv_value = |{ lv_error }|     iv_color = `#dc2626` iv_hint = `islem bekliyor` ) &&
       kpi( iv_label = `Toplam Tutar`     iv_value = lv_amount          iv_color = `#7c3aed` iv_hint = lv_amount_hint ) &&
       |</div>| ##NO_TEXT.
   ENDMETHOD.
@@ -339,7 +339,7 @@ CLASS zcl_zone_iarc_dashboard_html IMPLEMENTATION.
       lv_offset = lv_offset - lv_pct.
       lv_legend = lv_legend &&
         |<div class="lg"><span class="dot" style="background:{ lv_color };"></span>| &&
-        |{ esc( ls_status-status ) }<b>{ ls_status-count }</b></div>|.
+        |{ esc( zcl_zone_iarc_status=>text( ls_status-status ) ) }<b>{ ls_status-count }</b></div>|.
     ENDLOOP.
 
     lv_svg = lv_svg &&
@@ -438,7 +438,7 @@ CLASS zcl_zone_iarc_dashboard_html IMPLEMENTATION.
         |<td>{ esc( lv_supplier ) }</td>| &&
         |<td>{ lv_lifnr_cell }</td>| &&
         |<td class="r">{ esc( format_amount( iv_amount = ls_doc-amount iv_currency = ls_doc-currency ) ) }</td>| &&
-        |<td><span class="badge" style="background:{ lv_color };">{ esc( ls_doc-status ) }</span></td></tr>|.
+        |<td><span class="badge" style="background:{ lv_color };">{ esc( zcl_zone_iarc_status=>text( ls_doc-status ) ) }</span></td></tr>|.
     ENDLOOP.
     IF lv_rows IS INITIAL.
       lv_rows = |<tr><td colspan="7" class="empty">Belge yok</td></tr>| ##NO_TEXT.

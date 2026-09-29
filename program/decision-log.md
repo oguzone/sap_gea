@@ -898,3 +898,26 @@ KARAR TARİHİ: 2026-09-29
 KARARI VEREN: Oğuz Sayın
 ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_main*.prog.*
 ```
+
+### Karar 035
+
+```text
+KONU: Durum kodlarinin Turkce gosterimi
+KARAR: Veritabani/program kodlari (NEW, PARSED, MAPPED, PARKED, POSTED,
+  EXCEPTION, REJECTED) DEGISMEZ - karsilastirma, filtre, renk, KPI mantigi
+  bunlara bagli. Yalnizca gosterim Turkce: yeni domain ZONE_IARC_D001
+  (CHAR 10, sabit degerler + Turkce metinler: Yeni / Okundu / Muhasebeye
+  Hazir / Park Edildi / Muhasebelesti / Hatali / Reddedildi) ve veri
+  elemani ZONE_IARC_E001; T006-STATUS bu veri elemanina baglandi (ayni
+  tip - DB donusumu yok; secim ekranlarinda F4 Turkce). ZCL_ZONE_IARC_
+  STATUS=>TEXT metni domain'den oturum dilinde okur (SE63 ile cevrilebilir,
+  metin yoksa kod doner). ALV'de Durum sutunu = STATUS_TEXT (renkli), kod
+  sutunu "Durum Kodu" gizli (layout'tan acilabilir); ozet paneli ve kokpit
+  lejant/rozetleri Turkce.
+KARAR TARİHİ: 2026-09-29
+KARARI VEREN: Oğuz Sayın ("ALV'de Turkce gorunsun")
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_d001.doma.xml, src/zone_iarc_e001.dtel.xml,
+  src/zcl_zone_iarc_status.clas.* (yeni), src/zone_iarc_t006.tabl.xml,
+  src/zcl_zone_iarc_grid.clas.abap, src/zcl_zone_iarc_summary_html.clas.abap,
+  src/zcl_zone_iarc_dashboard_html.clas.abap
+```

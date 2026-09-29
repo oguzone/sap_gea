@@ -295,7 +295,7 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
       lv_offset = lv_offset - lv_pct.
       lv_legend = lv_legend &&
         |<div class="lg"><span class="dot" style="background:{ lv_color };"></span>| &&
-        |{ esc( ls_status-status ) }<b>{ ls_status-count }</b></div>|.
+        |{ esc( zcl_zone_iarc_status=>text( ls_status-status ) ) }<b>{ ls_status-count }</b></div>|.
     ENDLOOP.
 
     lv_svg = lv_svg &&
