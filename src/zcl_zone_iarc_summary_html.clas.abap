@@ -167,7 +167,8 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
       'box-shadow:0 1px 3px rgba(15,23,42,0.10);border-left:4px solid #1e6fd9;' &&
       'display:flex;flex-direction:column;justify-content:center;}' &&
       '.kpi:nth-child(3n){margin-right:0;}' &&
-      '.kpi .l{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;}' &&
+      '.kpi .l{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;' &&
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' &&
       '.kpi .n{font-size:20px;font-weight:700;margin-top:4px;white-space:nowrap;}' &&
       '.status{flex:0 0 19%;}' &&
       '.donut{display:flex;align-items:center;}' &&
@@ -182,7 +183,24 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
       '.bar .fl{height:10px;border-radius:5px;' &&
       'background:linear-gradient(90deg,#1e6fd9 0%,#38bdf8 100%);}' &&
       '.bar .am{width:26%;text-align:right;white-space:nowrap;font-weight:600;}' &&
-      '.empty{color:#94a3b8;}'.
+      '.empty{color:#94a3b8;}' &&
+      " Dar ekran: once satici grafigi, daha darda durum grafigi gizlenir.
+      '@media (max-width:1400px){' &&
+      '.suppliers{display:none;}' &&
+      '.company{flex:0 0 28%;}' &&
+      '.kpis{flex:0 0 44%;}' &&
+      '.status{flex:1;margin-right:0;}' &&
+      '.kpi{padding:6px 8px;}' &&
+      '.kpi .n{font-size:16px;}' &&
+      '.company h1{font-size:15px;}' &&
+      '}' &&
+      '@media (max-width:1000px){' &&
+      '.status{display:none;}' &&
+      '.company{flex:0 0 36%;}' &&
+      '.kpis{flex:1;margin-right:0;}' &&
+      '.kpi .n{font-size:14px;}' &&
+      'body{font-size:11px;}' &&
+      '}'.
   ENDMETHOD.
 
   METHOD company_card.
