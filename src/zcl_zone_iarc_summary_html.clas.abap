@@ -20,6 +20,7 @@ CLASS zcl_zone_iarc_summary_html DEFINITION
         amount        TYPE zone_iarc_t006-amount,
         currency      TYPE zone_iarc_t006-currency,
         supplier_vkn  TYPE zone_iarc_t006-supplier_vkn,
+        lifnr         TYPE zone_iarc_t006-lifnr,       " bos = cari eslesmemis
         supplier_name TYPE zone_iarc_t009-supplier_name,
       END OF ty_doc.
     TYPES tt_doc TYPE STANDARD TABLE OF ty_doc WITH DEFAULT KEY.
@@ -153,7 +154,7 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
       'box-shadow:0 1px 3px rgba(15,23,42,0.10);overflow:hidden;}' &&
       '.card h2{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;' &&
       'letter-spacing:0.6px;margin-bottom:8px;}' &&
-      '.company{flex:0 0 27%;color:#ffffff;' &&
+      '.company{flex:0 0 24%;color:#ffffff;' &&
       'background:linear-gradient(135deg,#0b3d91 0%,#1e6fd9 100%);}' &&
       '.company h1{font-size:17px;font-weight:600;line-height:1.2;margin-bottom:2px;}' &&
       '.company .sub{font-size:11px;opacity:0.8;margin-bottom:8px;}' &&
@@ -161,14 +162,14 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
       'border-bottom:1px solid rgba(255,255,255,0.18);}' &&
       '.kv .k{opacity:0.75;}' &&
       '.kv .v{font-weight:600;}' &&
-      '.kpis{flex:0 0 24%;display:flex;flex-wrap:wrap;align-content:space-between;margin-right:8px;}' &&
-      '.kpi{width:48.5%;height:calc(50% - 4px);background:#ffffff;border-radius:10px;padding:8px 12px;' &&
+      '.kpis{flex:0 0 34%;display:flex;flex-wrap:wrap;align-content:space-between;margin-right:8px;}' &&
+      '.kpi{width:32%;height:calc(50% - 4px);margin-right:2%;background:#ffffff;border-radius:10px;padding:8px 12px;' &&
       'box-shadow:0 1px 3px rgba(15,23,42,0.10);border-left:4px solid #1e6fd9;' &&
       'display:flex;flex-direction:column;justify-content:center;}' &&
-      '.kpi:nth-child(odd){margin-right:3%;}' &&
+      '.kpi:nth-child(3n){margin-right:0;}' &&
       '.kpi .l{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;}' &&
       '.kpi .n{font-size:20px;font-weight:700;margin-top:4px;white-space:nowrap;}' &&
-      '.status{flex:0 0 22%;}' &&
+      '.status{flex:0 0 19%;}' &&
       '.donut{display:flex;align-items:center;}' &&
       '.legend{margin-left:10px;}' &&
       '.lg{display:flex;align-items:center;margin:3px 0;white-space:nowrap;}' &&
@@ -233,13 +234,16 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
     ENDIF.
 
     DATA(lv_posted) = status_count( 'PARKED' ) + status_count( 'POSTED' ).
+    DATA(lv_no_vendor) = REDUCE i( INIT n = 0 FOR ls_doc IN mt_doc WHERE ( lifnr IS INITIAL ) NEXT n = n + 1 ).
 
     rv_html =
       |<div class="kpis">| &&
-      kpi( iv_label = `Toplam Belge`   iv_value = |{ lines( mt_doc ) }|              iv_color = `#1e6fd9` ) &&
-      kpi( iv_label = `Toplam Tutar`   iv_value = lv_total                          iv_color = `#7c3aed` ) &&
-      kpi( iv_label = `Hatali`         iv_value = |{ status_count( 'EXCEPTION' ) }| iv_color = `#dc2626` ) &&
-      kpi( iv_label = `Muhasebe`       iv_value = |{ lv_posted }|                   iv_color = `#16a34a` ) &&
+      kpi( iv_label = `Toplam Belge`     iv_value = |{ lines( mt_doc ) }|              iv_color = `#1e6fd9` ) &&
+      kpi( iv_label = `Toplam Tutar`     iv_value = lv_total                          iv_color = `#7c3aed` ) &&
+      kpi( iv_label = `Muhasebe`         iv_value = |{ lv_posted }|                   iv_color = `#16a34a` ) &&
+      kpi( iv_label = `Cari Eslesmeyen`  iv_value = |{ lv_no_vendor }|                iv_color = `#f59e0b` ) &&
+      kpi( iv_label = `Hatali`           iv_value = |{ status_count( 'EXCEPTION' ) }| iv_color = `#dc2626` ) &&
+      kpi( iv_label = `Muhasebeye Hazir` iv_value = |{ status_count( 'MAPPED' ) }|    iv_color = `#eab308` ) &&
       |</div>| ##NO_TEXT.
   ENDMETHOD.
 
