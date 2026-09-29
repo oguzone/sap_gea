@@ -1,8 +1,8 @@
 *&---------------------------------------------------------------------*
 *& Include ZONE_IARC_MAIN_CLS
 *&---------------------------------------------------------------------*
-*& LCL_SCOPE    : Kokpit kapsami - aktif sirket kodlari (ZONE_IARC_T001)
-*&                ve son 12 ay. Secim ekrani yok (Karar 034).
+*& LCL_SCOPE    : Kokpit kapsami - aktif sirket kodlari (ZONE_IARC_T001),
+*&                tum tarihler. Secim ekrani yok (Karar 034).
 *& LCL_LAUNCHER : Sol paneldeki buton (fonksiyon kodu) -> hedef program /
 *&                SM30 bakimi / islem. Tek yerde toplanir.
 *& LCL_APP      : Akis - dogrudan 0100 kokpit ekrani; PBO/PAI.
@@ -17,11 +17,6 @@ CLASS lcl_scope DEFINITION FINAL.
     CLASS-METHODS company_codes
       RETURNING
         VALUE(rt_bukrs) TYPE zcl_zone_iarc_dashboard=>tr_bukrs.
-
-    " Son 12 ay: 11 ay onceki ayin 1'i .. bugun.
-    CLASS-METHODS last_12_months
-      RETURNING
-        VALUE(rt_date) TYPE zcl_zone_iarc_dashboard=>tr_date.
 ENDCLASS.
 
 CLASS lcl_scope IMPLEMENTATION.
@@ -33,20 +28,6 @@ CLASS lcl_scope IMPLEMENTATION.
                         ( sign = 'I' option = 'EQ' low = ls_active-bukrs ) ).
   ENDMETHOD.
 
-  METHOD last_12_months.
-    DATA lv_year  TYPE i.
-    DATA lv_month TYPE i.
-    DATA lv_low   TYPE d.
-
-    lv_year  = sy-datum(4).
-    lv_month = sy-datum+4(2) - 11.
-    IF lv_month < 1.
-      lv_month = lv_month + 12.
-      lv_year  = lv_year - 1.
-    ENDIF.
-    lv_low = |{ lv_year WIDTH = 4 ALIGN = RIGHT PAD = '0' }{ lv_month WIDTH = 2 ALIGN = RIGHT PAD = '0' }01|.
-    rt_date = VALUE #( ( sign = 'I' option = 'BT' low = lv_low high = sy-datum ) ).
-  ENDMETHOD.
 ENDCLASS.
 
 
@@ -176,7 +157,7 @@ ENDCLASS.
 CLASS lcl_app IMPLEMENTATION.
   METHOD constructor.
     DATA(lt_bukrs) = lcl_scope=>company_codes( ).
-    DATA(lt_date)  = lcl_scope=>last_12_months( ).
+    DATA lt_date TYPE zcl_zone_iarc_dashboard=>tr_date.   " bos = tum tarihler (Karar 034)
     mo_dashboard = NEW #( it_bukrs = lt_bukrs it_date = lt_date ).
     mo_launcher  = NEW #( it_bukrs = lt_bukrs it_date = lt_date ).
   ENDMETHOD.

@@ -6,7 +6,7 @@
 *&   - Sol: gruplanmis butonlar (belgeler, aktarim, uyarlama, izleme) -
 *&     ilgili programi / SM30 bakimini / islemi acar.
 *&   - Sag: HTML gosterge paneli (ZCL_ZONE_IARC_DASHBOARD) - aktif sirket
-*&     kodlari (ZONE_IARC_T001), son 12 ay.
+*&     kodlari (ZONE_IARC_T001), tum tarihler.
 *&
 *& Sorumluluklar:
 *&   - ZONE_IARC_MAIN_TOP : Global tanimlar

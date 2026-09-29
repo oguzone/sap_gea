@@ -890,7 +890,8 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_main*.prog.* (yeni),
 KONU: Kokpit secim ekrani kaldirildi
 KARAR: ZONE_IARC_MAIN dogrudan kokpiti acar. Kapsam LCL_SCOPE ile:
   sirket kodlari = ZONE_IARC_T001 ACTIVE_FLG=X olanlar (hic yoksa hepsi),
-  donem = son 12 ay. "Gelen e-Arsiv Listesi" butonu bu kapsami listenin
+  donem = tum tarihler (ilk surumde son 12 ay idi - kullanici istegiyle
+  kaldirildi; aylik grafik yine son 12 ayi gosterir). "Gelen e-Arsiv Listesi" butonu bu kapsami listenin
   secim ekranina tasir. ZONE_IARC_MAIN_SEL include'u silindi (SAP'de
   elle silinmeli).
 KARAR TARİHİ: 2026-09-29
