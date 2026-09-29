@@ -169,7 +169,8 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
       '.kpi:nth-child(3n){margin-right:0;}' &&
       '.kpi .l{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;' &&
       'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' &&
-      '.kpi .n{font-size:20px;font-weight:700;margin-top:4px;white-space:nowrap;}' &&
+      '.kpi .n{font-size:20px;font-weight:700;margin-top:4px;white-space:nowrap;' &&
+      'overflow:hidden;text-overflow:ellipsis;}' &&
       '.status{flex:0 0 19%;}' &&
       '.donut{display:flex;align-items:center;}' &&
       '.legend{margin-left:10px;}' &&

@@ -456,10 +456,10 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
     APPEND VALUE stb_button( function = 'DETL' icon = icon_select_detail text = 'Detay'
                              quickinfo = 'Secili belgenin detayini alt gride getir' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'XML' icon = icon_xml_doc text = 'XML Goster'
-                             quickinfo = 'Ham UBL XML' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'HTML' icon = icon_display text = 'HTML Goster'
-                             quickinfo = 'Okunabilir fatura gorunumu' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'XML' icon = icon_xml_doc text = 'XML'
+                             quickinfo = 'Ham UBL XML goster' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'HTML' icon = icon_display text = 'HTML'
+                             quickinfo = 'Okunabilir fatura gorunumu (HTML)' ) TO e_object->mt_toolbar ##NO_TEXT.
     APPEND VALUE stb_button( function = 'HIST' icon = icon_protocol text = 'Gecmis'
                              quickinfo = 'Belgenin islem gecmisi (log)' ) TO e_object->mt_toolbar ##NO_TEXT.
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
@@ -785,7 +785,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
       WHEN 'TOTAL' THEN 'Dip Toplamlar'
       ELSE '' ) ##NO_TEXT.
     IF mv_sel_invid IS INITIAL.
-      rv_title = |{ lv_mode_text } - ustten bir belge secin (cift tik, fatura no'ya tik ya da Detay)| ##NO_TEXT.
+      rv_title = |{ lv_mode_text } - belge secin| ##NO_TEXT.
     ELSE.
       rv_title = |{ lv_mode_text } - { mv_sel_invid }| ##NO_TEXT.
     ENDIF.
