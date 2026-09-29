@@ -1,16 +1,65 @@
 *&---------------------------------------------------------------------*
 *& Include ZONE_IARC_MAIN_CLS
 *&---------------------------------------------------------------------*
+*& LCL_SCOPE    : Kokpit kapsami - aktif sirket kodlari (ZONE_IARC_T001)
+*&                ve son 12 ay. Secim ekrani yok (Karar 034).
 *& LCL_LAUNCHER : Sol paneldeki buton (fonksiyon kodu) -> hedef program /
 *&                SM30 bakimi / islem. Tek yerde toplanir.
-*& LCL_APP      : Akis - secim ekrani -> 0100 kokpit ekrani; PBO/PAI.
+*& LCL_APP      : Akis - dogrudan 0100 kokpit ekrani; PBO/PAI.
 *&---------------------------------------------------------------------*
+
+*----------------------------------------------------------------------*
+* LCL_SCOPE
+*----------------------------------------------------------------------*
+CLASS lcl_scope DEFINITION FINAL.
+  PUBLIC SECTION.
+    " ZONE_IARC_T001'de aktif sirketler; hic yoksa bos aralik (= hepsi).
+    CLASS-METHODS company_codes
+      RETURNING
+        VALUE(rt_bukrs) TYPE zcl_zone_iarc_dashboard=>tr_bukrs.
+
+    " Son 12 ay: 11 ay onceki ayin 1'i .. bugun.
+    CLASS-METHODS last_12_months
+      RETURNING
+        VALUE(rt_date) TYPE zcl_zone_iarc_dashboard=>tr_date.
+ENDCLASS.
+
+CLASS lcl_scope IMPLEMENTATION.
+  METHOD company_codes.
+    SELECT bukrs FROM zone_iarc_t001
+      WHERE active_flg = @abap_true
+      INTO TABLE @DATA(lt_active).
+    rt_bukrs = VALUE #( FOR ls_active IN lt_active
+                        ( sign = 'I' option = 'EQ' low = ls_active-bukrs ) ).
+  ENDMETHOD.
+
+  METHOD last_12_months.
+    DATA lv_year  TYPE i.
+    DATA lv_month TYPE i.
+    DATA lv_low   TYPE d.
+
+    lv_year  = sy-datum(4).
+    lv_month = sy-datum+4(2) - 11.
+    IF lv_month < 1.
+      lv_month = lv_month + 12.
+      lv_year  = lv_year - 1.
+    ENDIF.
+    lv_low = |{ lv_year WIDTH = 4 ALIGN = RIGHT PAD = '0' }{ lv_month WIDTH = 2 ALIGN = RIGHT PAD = '0' }01|.
+    rt_date = VALUE #( ( sign = 'I' option = 'BT' low = lv_low high = sy-datum ) ).
+  ENDMETHOD.
+ENDCLASS.
+
 
 *----------------------------------------------------------------------*
 * LCL_LAUNCHER
 *----------------------------------------------------------------------*
 CLASS lcl_launcher DEFINITION FINAL.
   PUBLIC SECTION.
+    METHODS constructor
+      IMPORTING
+        !it_bukrs TYPE zcl_zone_iarc_dashboard=>tr_bukrs
+        !it_date  TYPE zcl_zone_iarc_dashboard=>tr_date.
+
     " Fonksiyon kodu taninirsa hedefi acar ve ABAP_TRUE doner.
     METHODS launch
       IMPORTING
@@ -19,6 +68,9 @@ CLASS lcl_launcher DEFINITION FINAL.
         VALUE(rv_handled) TYPE abap_bool.
 
   PRIVATE SECTION.
+    DATA mt_bukrs TYPE zcl_zone_iarc_dashboard=>tr_bukrs.
+    DATA mt_date  TYPE zcl_zone_iarc_dashboard=>tr_date.
+
     METHODS submit
       IMPORTING
         !iv_program TYPE programm.
@@ -31,15 +83,20 @@ CLASS lcl_launcher DEFINITION FINAL.
 ENDCLASS.
 
 CLASS lcl_launcher IMPLEMENTATION.
+  METHOD constructor.
+    mt_bukrs = it_bukrs.
+    mt_date  = it_date.
+  ENDMETHOD.
+
   METHOD launch.
     rv_handled = abap_true.
     CASE iv_fcode.
       " --- Belgeler
       WHEN 'LIST'.
-        " Kokpitteki sirket/donem secimi listeye tasinir.
+        " Kokpitin sirket/donem kapsami listenin secim ekranina tasinir.
         SUBMIT zone_iarc_incoming VIA SELECTION-SCREEN
-          WITH s_bukrs IN s_bukrs
-          WITH s_date  IN s_date
+          WITH s_bukrs IN mt_bukrs
+          WITH s_date  IN mt_date
           AND RETURN.
       WHEN 'POLL'.
         submit( 'ZONE_IARC_POLL' ).      " Bayt: adiniza duzenlenen belgeleri cek
@@ -104,9 +161,6 @@ CLASS lcl_app DEFINITION FINAL.
         refresh TYPE sy-ucomm VALUE 'REFR',
       END OF c_fcode.
 
-    " Fatura tarihi varsayilani: son 12 ay (bu ay dahil).
-    CLASS-METHODS set_default_period.
-
     METHODS constructor.
     METHODS run.
     METHODS on_pbo.
@@ -120,27 +174,11 @@ CLASS lcl_app DEFINITION FINAL.
 ENDCLASS.
 
 CLASS lcl_app IMPLEMENTATION.
-  METHOD set_default_period.
-    DATA lv_year  TYPE i.
-    DATA lv_month TYPE i.
-    DATA lv_low   TYPE d.
-
-    IF s_date[] IS NOT INITIAL.
-      RETURN.
-    ENDIF.
-    lv_year  = sy-datum(4).
-    lv_month = sy-datum+4(2) - 11.
-    IF lv_month < 1.
-      lv_month = lv_month + 12.
-      lv_year  = lv_year - 1.
-    ENDIF.
-    lv_low = |{ lv_year WIDTH = 4 ALIGN = RIGHT PAD = '0' }{ lv_month WIDTH = 2 ALIGN = RIGHT PAD = '0' }01|.
-    s_date[] = VALUE #( ( sign = 'I' option = 'BT' low = lv_low high = sy-datum ) ).
-  ENDMETHOD.
-
   METHOD constructor.
-    mo_dashboard = NEW #( it_bukrs = CONV #( s_bukrs[] ) it_date = CONV #( s_date[] ) ).
-    mo_launcher  = NEW #( ).
+    DATA(lt_bukrs) = lcl_scope=>company_codes( ).
+    DATA(lt_date)  = lcl_scope=>last_12_months( ).
+    mo_dashboard = NEW #( it_bukrs = lt_bukrs it_date = lt_date ).
+    mo_launcher  = NEW #( it_bukrs = lt_bukrs it_date = lt_date ).
   ENDMETHOD.
 
   METHOD run.

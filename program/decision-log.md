@@ -883,3 +883,17 @@ KARARI VEREN: Oğuz Sayın
 ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_main*.prog.* (yeni),
   src/zcl_zone_iarc_dashboard.clas.* (yeni), src/zcl_zone_iarc_dashboard_html.clas.* (yeni)
 ```
+
+### Karar 034
+
+```text
+KONU: Kokpit secim ekrani kaldirildi
+KARAR: ZONE_IARC_MAIN dogrudan kokpiti acar. Kapsam LCL_SCOPE ile:
+  sirket kodlari = ZONE_IARC_T001 ACTIVE_FLG=X olanlar (hic yoksa hepsi),
+  donem = son 12 ay. "Gelen e-Arsiv Listesi" butonu bu kapsami listenin
+  secim ekranina tasir. ZONE_IARC_MAIN_SEL include'u silindi (SAP'de
+  elle silinmeli).
+KARAR TARİHİ: 2026-09-29
+KARARI VEREN: Oğuz Sayın
+ETKİLENEN MODÜLLER/DOSYALAR: src/zone_iarc_main*.prog.*
+```
