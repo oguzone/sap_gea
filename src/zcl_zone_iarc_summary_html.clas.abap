@@ -162,11 +162,12 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
       '.kv .k{opacity:0.75;}' &&
       '.kv .v{font-weight:600;}' &&
       '.kpis{flex:0 0 24%;display:flex;flex-wrap:wrap;align-content:space-between;margin-right:8px;}' &&
-      '.kpi{width:48.5%;background:#ffffff;border-radius:10px;padding:8px 10px;margin-bottom:6px;' &&
-      'box-shadow:0 1px 3px rgba(15,23,42,0.10);border-left:4px solid #1e6fd9;}' &&
+      '.kpi{width:48.5%;height:calc(50% - 4px);background:#ffffff;border-radius:10px;padding:8px 12px;' &&
+      'box-shadow:0 1px 3px rgba(15,23,42,0.10);border-left:4px solid #1e6fd9;' &&
+      'display:flex;flex-direction:column;justify-content:center;}' &&
       '.kpi:nth-child(odd){margin-right:3%;}' &&
       '.kpi .l{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;}' &&
-      '.kpi .n{font-size:17px;font-weight:700;margin-top:2px;white-space:nowrap;}' &&
+      '.kpi .n{font-size:20px;font-weight:700;margin-top:4px;white-space:nowrap;}' &&
       '.status{flex:0 0 22%;}' &&
       '.donut{display:flex;align-items:center;}' &&
       '.legend{margin-left:10px;}' &&
@@ -205,12 +206,17 @@ CLASS zcl_zone_iarc_summary_html IMPLEMENTATION.
     DATA(lv_more) = COND string( WHEN lines( lt_bukrs ) > 1
                                  THEN | (+{ lines( lt_bukrs ) - 1 } sirket)| ELSE `` ) ##NO_TEXT.
 
+    " Bos bilgiler icin "-" (bos deger / "A110 - / TR" gibi yarim satir olmasin).
+    DATA(lv_location) = condense( |{ ls_t001-ort01 } { ls_t001-land1 }| ).
+    DATA(lv_sub) = |Sirket Kodu { lv_bukrs }{ lv_more }| &&
+                   COND string( WHEN lv_location IS NOT INITIAL THEN | - { lv_location }| ) ##NO_TEXT.
+    DATA(lv_vkn) = COND string( WHEN lv_tax_no IS NOT INITIAL THEN |{ lv_tax_no }| ELSE `-` ).
+
     rv_html =
       |<div class="card company">| &&
       |<h1>{ esc( lv_name ) }</h1>| &&
-      |<div class="sub">Sirket Kodu { esc( lv_bukrs ) }{ esc( lv_more ) }| &&
-      | - { esc( ls_t001-ort01 ) } / { esc( ls_t001-land1 ) }</div>| &&
-      |<div class="kv"><span class="k">VKN</span><span class="v">{ esc( lv_tax_no ) }</span></div>| &&
+      |<div class="sub">{ esc( lv_sub ) }</div>| &&
+      |<div class="kv"><span class="k">VKN</span><span class="v">{ esc( lv_vkn ) }</span></div>| &&
       |<div class="kv"><span class="k">Para Birimi</span><span class="v">{ esc( ls_t001-waers ) }</span></div>| &&
       |<div class="kv"><span class="k">Kullanici</span><span class="v">{ esc( sy-uname ) }</span></div>| &&
       |<div class="kv"><span class="k">Rapor Zamani</span>| &&
