@@ -458,8 +458,10 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
                              quickinfo = 'Secili belgenin detayini alt gride getir' ) TO e_object->mt_toolbar ##NO_TEXT.
     APPEND VALUE stb_button( function = 'XML' icon = icon_xml_doc text = 'XML Goster'
                              quickinfo = 'Ham UBL XML' ) TO e_object->mt_toolbar ##NO_TEXT.
-    APPEND VALUE stb_button( function = 'HTML' icon = icon_protocol text = 'HTML Goster'
+    APPEND VALUE stb_button( function = 'HTML' icon = icon_display text = 'HTML Goster'
                              quickinfo = 'Okunabilir fatura gorunumu' ) TO e_object->mt_toolbar ##NO_TEXT.
+    APPEND VALUE stb_button( function = 'HIST' icon = icon_protocol text = 'Gecmis'
+                             quickinfo = 'Belgenin islem gecmisi (log)' ) TO e_object->mt_toolbar ##NO_TEXT.
     APPEND VALUE stb_button( butn_type = 3 ) TO e_object->mt_toolbar.
     APPEND VALUE stb_button( function = 'REPR' icon = icon_execute_object text = 'Yeniden Isle'
                              quickinfo = 'Tedarikci eslemesi/kural kontrolunu tekrarla' ) TO e_object->mt_toolbar ##NO_TEXT.
@@ -476,7 +478,7 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
         refresh_top_grid( ).
       WHEN 'DELE'.
         delete_selected( ).
-      WHEN 'DETL' OR 'XML' OR 'HTML'.
+      WHEN 'DETL' OR 'XML' OR 'HTML' OR 'HIST'.
         DATA(ls_master) = current_master( ).
         IF ls_master IS INITIAL.
           MESSAGE 'Once listeden bir satir secin' TYPE 'S' DISPLAY LIKE 'W' ##NO_TEXT.
@@ -489,6 +491,8 @@ CLASS zcl_zone_iarc_grid IMPLEMENTATION.
             zcl_zone_iarc_doc_view=>show_xml( ls_master-provider_doc_id ).
           WHEN 'HTML'.
             zcl_zone_iarc_doc_view=>show_html( ls_master-provider_doc_id ).
+          WHEN 'HIST'.
+            NEW zcl_zone_iarc_history( )->show( ls_master-provider_doc_id ).
         ENDCASE.
       WHEN 'REPR' OR 'PARK' OR 'POST' OR 'FB01' OR 'FB60' OR 'SHOW'.
         run_action( e_ucomm ).

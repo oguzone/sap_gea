@@ -834,3 +834,20 @@ ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_bdc.clas.* (yeni),
   src/zcl_zone_iarc_fb60.clas.* (yeni), src/zcl_zone_iarc_fb01.clas.abap,
   src/zcl_zone_iarc_actions.clas.abap, src/zcl_zone_iarc_grid.clas.abap
 ```
+
+### Karar 031
+
+```text
+KONU: Satir bazinda belge gecmisi (log) goruntuleme
+KARAR: Ust grid arac cubuguna "Gecmis" butonu. Yeni ZCL_ZONE_IARC_HISTORY
+  secili belgenin ZONE_IARC_T008 satirlarini (eskiden yeniye) popup ALV'de
+  gosterir: durum trafik isigi (OK yesil / ERROR kirmizi / diger sari),
+  yerel tarih-saat (TIMESTAMP -> sy-zonlo), adim, sonuc, mesaj (255'e
+  kirpilir), kullanici. Popup REUSE_ALV_GRID_DISPLAY_LVC (bu sistemde
+  calistigi dogrulanmis tam ekran ALV ailesi) ile. Log kayitlari belge
+  silinse de kalir (Karar 021) - silinmis belgenin gecmisi SE16N/T008.
+KARAR TARİHİ: 2026-09-29
+KARARI VEREN: Oğuz Sayın
+ETKİLENEN MODÜLLER/DOSYALAR: src/zcl_zone_iarc_history.clas.* (yeni),
+  src/zcl_zone_iarc_grid.clas.abap
+```
